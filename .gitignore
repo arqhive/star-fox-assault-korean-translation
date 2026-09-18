@@ -1,0 +1,16 @@
+# 게임 이미지·빌드 결과 (배포 금지)
+*.iso
+*.rvz
+*.gcm
+
+# 작업 중 덤프·미리보기·폐기 스크립트
+tools/_work/
+*.png
+*.fpc
+*.pac
+*.rel
+*.dol
+*.szp
+
+__pycache__/
+*.pyc
