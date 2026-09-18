@@ -96,5 +96,6 @@ NPAC:     'NPAC', 전체 크기(0x20 헤더 포함), 데이터 크기, 인덱스
 | `tools/kofont.py` | 한글 SJIS 폰트 생성, DOL 패치 |
 | `tools/build_menu.py` | 메뉴 SELT·rel/DOL 문자열·이름 입력 글자표 |
 | `tools/build_tex.py`, `texspec*.py`, `texedit.py` | 텍스처 한글화 |
-| `tools/punct.py`, `sync_ko.py` | 문장부호 검수, 번역 원고 동기화 |
+| `tools/punct.py`, `sync_ko.py` | 문장부호 규칙 적용, 번역 원고 동기화 |
+| `tools/check_ko.py`, `diff_ko.py`, `sync_dup.py` | 번역 검사, 변경 내역 비교, 중복 대사 맞추기 |
 | `tools/texdiff.py`, `texcands.py`, `texscan*.py`, `texview.py` | 텍스처 조사 |

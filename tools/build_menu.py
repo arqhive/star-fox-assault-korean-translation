@@ -31,7 +31,8 @@ NAME_TABLE2 = ('파퍼포푸피하허호후히에애'
 NAME_TABLES = [(0x18040, 'あかさた', NAME_TABLE1), (0x180B8, 'アカサタ', NAME_TABLE2)]
 assert len(NAME_TABLE1) == len(set(NAME_TABLE1)) == 59 and len(NAME_TABLE2) == len(set(NAME_TABLE2)) == 59 and not set(NAME_TABLE1) & set(NAME_TABLE2)
 
-DOL_STRINGS = [(0x21D8A0, '新規登録', '신규등록'), (0x21DA54, 'ゲスト', '게스트')]   # DOL 파일 오프셋
+DOL_STRINGS = [(0x21D8A0, '新規登録', '신규등록'), (0x21DA54, 'ゲスト', '게스트'),
+               (0x29CDCC, 'はい', '예'), (0x29CDDC, 'いいえ', '아니요')]   # DOL 파일 오프셋
 
 def sjis_bytes(text, komap):
     out = b''

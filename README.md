@@ -28,12 +28,12 @@
 | CRC32 | `089208F3` |
 | MD5 | `27aed37f24061b1ff06cdd3640053481` |
 
-| 패치 적용 결과 | 값 |
+| 패치 적용 결과 (v0.91) | 값 |
 |---|---|
 | 크기 | 1,459,978,240 바이트 (원본과 같음) |
-| CRC32 | `B56FD8AF` |
-| MD5 | `23d7d72c15723968db4d3076ba9a0883` |
-| SHA1 | `2e7aebfa0d3d5d43ecc686c47c677f156ca58d8b` |
+| CRC32 | `8E03EC77` |
+| MD5 | `d91e97fe2f90aad0a7cb97e64e9491a2` |
+| SHA1 | `a6f3d307b498603c64b164f1277ece660aeac8ec` |
 
 - 북미·유럽판에는 적용할 수 없습니다. RVZ·GCM 으로 갖고 계시면 Dolphin 으로 ISO 로 바꾼 뒤 적용하세요.
 - 패치 도구: [Delta Patcher](https://github.com/marco-calautti/DeltaPatcher)(GUI) 또는 [xdelta3](https://github.com/jmacd/xdelta-gpl/releases)(명령줄).
@@ -44,6 +44,7 @@
 - 배틀 모드 일부 화면과 스테이지 배경에 그려진 글자는 아직 일본어로 남아 있을 수 있습니다.
 - 이름 입력은 준비된 음절표(120자) 안에서만 쓸 수 있습니다.
 - 설명 상자의 한 줄짜리 문구는 원래 두 줄 기준 배치라 살짝 아래에 놓입니다.
+- 무전 화자 이름표는 256색 팔레트 제약으로 글자 가장자리가 다소 거칠게 보입니다.
 
 ## 개발자용: 직접 빌드
 
@@ -65,7 +66,7 @@
 python tools/build.py
 
 # 배포용 패치까지: 빌드 → xdelta 패치 → 적용해서 해시 검증
-python tools/make_patch.py 0.9
+python tools/make_patch.py 0.91
 ```
 
 일본판 ISO 를 읽어 변경 파일 58개와 패치된 DOL 로 이미지를 다시 구성하고, 파일 1090개를 전부 원본과 비교해 검증합니다.
@@ -76,7 +77,8 @@ python tools/make_patch.py 0.9
 - 대사: [`translation/drafts/*_ko.py`](translation/drafts) 수정 → `python tools/tm_apply.py translation/ko/sNN.json translation/drafts/sNN_ko.py` → 빌드
 - 메뉴: [`translation/drafts/menu_ko.py`](translation/drafts/menu_ko.py) 수정 → `python tools/menu_apply.py` → 빌드
 - 그림 글씨: [`tools/texspec.py`](tools/texspec.py), [`tools/texspec2.py`](tools/texspec2.py) 수정 → 빌드
-- 표기·말투·문장부호 원칙은 [`translation/GLOSSARY.md`](translation/GLOSSARY.md) 참고
+- 표기·말투·문장부호 원칙은 [`translation/GLOSSARY.md`](translation/GLOSSARY.md), 검수 기준은 [`docs/REVIEW_GUIDE.md`](docs/REVIEW_GUIDE.md) 참고
+- 검사: `python tools/check_ko.py` (빈 줄·한자/가나 혼입·줄 폭·줄 수), 여러 파일에 복사된 대사 맞추기: `python tools/sync_dup.py --apply`
 - 빌드는 `translation/ko/*.json` 의 `ko` 값을 씁니다. 줄 폭 초과(무전 408px / 데모 504px)나 한자·가나 혼입이 있으면 멈춥니다.
 
 `translation/ko/*.json` 에는 **번역문만** 들어 있습니다(항목 이름 + 한국어).
@@ -99,6 +101,7 @@ translation/
   GLOSSARY.md   표기·말투·문장부호 원칙
 docs/
   TECHNICAL.md  파일 포맷과 한글화 방식
+  REVIEW_GUIDE.md  대사 검수 기준(마침표·쉼표·직역투)
 release/        배포용 xdelta 패치 + 사용 설명서
 work/           (git 제외) 빌드 결과·원문·미리보기
 ```

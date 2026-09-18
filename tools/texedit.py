@@ -139,9 +139,15 @@ def enc_cmpr(img):
                     opaque = b[:, 3] >= 128
                     if not opaque.any():
                         out += struct.pack('>HHI', 0, 0xFFFF, 0xFFFFFFFF); continue
-                    cols = b[opaque, :3]
-                    lum = cols @ np.array([299, 587, 114])
-                    hi = cols[lum.argmax()]; lo = cols[lum.argmin()]
+                    cols = b[opaque, :3].astype(float)
+                    if len(cols) > 1:                      # 주성분 축에 투영해 끝점 선택
+                        mean = cols.mean(0); cen = cols - mean
+                        u, sv, vt = np.linalg.svd(cen, full_matrices=False)
+                        ax = vt[0]; proj = cen @ ax
+                        hi = np.clip(mean + ax * proj.max(), 0, 255).round()
+                        lo = np.clip(mean + ax * proj.min(), 0, 255).round()
+                    else:
+                        hi = lo = cols[0]
                     c0, c1 = _to565(hi), _to565(lo)
                     transparent = not opaque.all()
                     if transparent:
@@ -175,16 +181,54 @@ def enc_c8(img, pal, used=None):
     idx = cand[d.argmin(1)].reshape(nby * 4, nbx * 8)
     return idx.reshape(nby, 4, nbx, 8).transpose(0, 2, 1, 3).reshape(-1).astype(np.uint8).tobytes()
 
-def encode_like(nd, t, img):
-    f = t['fmt']
-    if f == 4: return enc_cmpr(img)
+def _keep_unchanged_cmpr(old_data, new_data, img, orig, w, h):
+    """바뀌지 않은 4x4 블록은 원본 압축 데이터를 그대로 둔다 (재압축 얼룩 방지)"""
+    nbx = (w + 7) // 8; nby = (h + 7) // 8
+    diff = (img.astype(int) != orig.astype(int)).any(-1)
+    full = np.zeros((nby * 8, nbx * 8), bool); full[:h, :w] = diff
+    out = bytearray(new_data); k = 0
+    for by in range(nby):
+        for bx in range(nbx):
+            for sy in range(2):
+                for sx in range(2):
+                    sub = full[by*8 + sy*4:by*8 + sy*4 + 4, bx*8 + sx*4:bx*8 + sx*4 + 4]
+                    if not sub.any(): out[k:k+8] = old_data[k:k+8]
+                    k += 8
+    return bytes(out)
+
+def _keep_unchanged_pal(old_data, new_data, img, orig, w, h, bits):
+    """C4/C8: 바뀌지 않은 픽셀은 원본 팔레트 인덱스를 그대로 둔다"""
+    bw, bh = (8, 8) if bits == 4 else (8, 4)
+    nbx = (w + bw - 1) // bw; nby = (h + bh - 1) // bh
+    diff = (img.astype(int) != orig.astype(int)).any(-1)
+    full = np.zeros((nby * bh, nbx * bw), bool); full[:h, :w] = diff
+    order = full.reshape(nby, bh, nbx, bw).transpose(0, 2, 1, 3).reshape(-1)   # 블록 순서
+    if bits == 4:
+        o = np.frombuffer(old_data, np.uint8); n = np.frombuffer(new_data, np.uint8)
+        oi = np.stack([o >> 4, o & 15], 1).reshape(-1); ni = np.stack([n >> 4, n & 15], 1).reshape(-1)
+        m = order[:len(oi)]
+        res = np.where(m, ni, oi).astype(np.uint8)
+        return ((res[0::2] << 4) | res[1::2]).tobytes()
+    o = np.frombuffer(old_data, np.uint8); n = np.frombuffer(new_data, np.uint8)
+    m = order[:len(o)]
+    return np.where(m, n, o).astype(np.uint8).tobytes()
+
+def encode_like(nd, t, img, orig=None):
+    """orig(원본 이미지)를 주면 바뀐 부분만 다시 인코딩한다"""
+    f = t['fmt']; w, h = t['w'], t['h']
+    old = nd[t['data_off']:t['data_off'] + t['dsz']]
+    if f == 4:
+        data = enc_cmpr(img)
+        return _keep_unchanged_cmpr(old, data, img, orig, w, h) if orig is not None else data
     if f == 5:
         pal = palette(nd[t['pal_off']:t['pal_off'] + t['pal']], int(t['b'][4:6], 16))
-        return enc_c4(img, pal)
+        data = enc_c4(img, pal)
+        return _keep_unchanged_pal(old, data, img, orig, w, h, 4) if orig is not None else data
     if f == 6:
         pal = palette(nd[t['pal_off']:t['pal_off'] + t['pal']], int(t['b'][4:6], 16))
-        used = set(nd[t['data_off']:t['data_off'] + t['dsz']])
-        return enc_c8(img, pal, used)
+        used = set(old)
+        data = enc_c8(img, pal, used)
+        return _keep_unchanged_pal(old, data, img, orig, w, h, 8) if orig is not None else data
     raise ValueError('unsupported fmt %d' % f)
 
 # ---------------- 파일 내 텍스처 교체 ----------------
@@ -233,27 +277,47 @@ def detect_text(img, region, thresh=60):
     ys, xs = np.nonzero(keep)
     return keep, (x0 + xs.min(), y0 + ys.min(), x0 + xs.max() + 1, y0 + ys.max() + 1)
 
-def retext_auto(img, region, text, px=None, align='left', color=(255, 255, 255, 255), thresh=40, outline=None, dx=0, spacing=0, color_auto=False, dy=0, x=None):
+def retext_auto(img, region, text, px=None, align='left', color=(255, 255, 255, 255), thresh=40, outline=None, dx=0, spacing=0, color_auto=False, dy=0, x=None, cy=None, full=True):
     mask, bb = detect_text(img, region, thresh)
     assert bb is not None, ('no text found', region)
     x0, y0, x1, y1 = region
     if color_auto: color = auto_color(img, bb)
-    m = cv2.dilate(mask.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+    m = cv2.dilate(mask.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
     img = img.copy(); reg = img[y0:y1, x0:x1]
-    # 인페인팅은 얼룩이 생김 → 같은 줄의 배경(글자 아님, 밝기가 기준값 근처) 중앙값으로 채움
-    lum = reg[..., :3].astype(int).mean(-1); base = np.median(lum)
-    bgmask = ~m & (np.abs(lum - base) < thresh / 2)
-    for yy in range(reg.shape[0]):
-        if not m[yy].any(): continue
-        src = reg[yy][bgmask[yy]]
-        if len(src) < 3:
-            near = [r for r in range(reg.shape[0]) if bgmask[r].sum() >= 3]
-            if not near: continue
-            src = reg[min(near, key=lambda r: abs(r - yy))][bgmask[min(near, key=lambda r: abs(r - yy))]]
-        reg[yy, m[yy], :3] = np.median(src[:, :3], axis=0).astype(np.uint8)
+    lum0 = reg[..., :3].astype(int).mean(-1)
+    def mode(px):
+        cols, cnt = np.unique(px[:, :3], axis=0, return_counts=True)
+        return cols[cnt.argmax()]
+    if full:
+        # 줄별 배경색을 기준으로 '글자 덩어리'만 골라 지운다.
+        #  - 줄 중앙값과 차이가 큰 픽셀 중, 검출된 글자와 이어진 덩어리만 글자로 본다
+        #  - 배경 무늬·테두리는 글자와 이어져 있지 않으므로 남는다
+        rowmed = np.median(lum0, axis=1, keepdims=True)
+        low = (np.abs(lum0 - rowmed) > max(5, thresh / 3)).astype(np.uint8)
+        nlab, lab = cv2.connectedComponents(low, connectivity=8)
+        seed = set(np.unique(lab[cv2.dilate(m.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)])) - {0}
+        m = np.isin(lab, list(seed)) if seed else m
+        m = cv2.dilate(m.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        clean = ~cv2.dilate(m.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        gmode = mode(reg[clean]) if clean.any() else np.array([0, 0, 0], np.uint8)
+        for yy in range(reg.shape[0]):
+            if not m[yy].any(): continue
+            col = mode(reg[yy][clean[yy]]) if clean[yy].sum() >= 3 else gmode
+            reg[yy, m[yy], :3] = col
+    else:
+        box = np.zeros_like(m)         # 원래 글자가 있던 범위(여유 3px)
+        box[max(0, bb[1] - y0 - 3):bb[3] - y0 + 3, max(0, bb[0] - x0 - 3):bb[2] - x0 + 3] = True
+        base0 = np.median(lum0)
+        m = m | ((np.abs(lum0 - base0) > max(5, thresh / 3)) & box)
+        clean = ~cv2.dilate(m.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        gmode = mode(reg[clean]) if clean.any() else np.array([0, 0, 0], np.uint8)
+        for yy in range(reg.shape[0]):
+            if not m[yy].any(): continue
+            col = mode(reg[yy][clean[yy]]) if clean[yy].sum() >= 3 else gmode
+            reg[yy, m[yy], :3] = col
     bx0, by0, bx1, by1 = bb
     px = px or (by1 - by0) * 1.05
-    cy = (by0 + by1) / 2
+    cy = (by0 + by1) / 2 if cy is None else cy
     h = max(by1 - by0, px) + 4
     if align == 'left': box = ((x if x is not None else bx0 + dx), int(cy - h / 2), x1, int(cy + h / 2 + 1))
     else: box = (x0, int(cy - h / 2), x1, int(cy + h / 2 + 1))

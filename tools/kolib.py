@@ -49,7 +49,7 @@ class Atlas:
             gy, gx = divmod(i, COLS)
             tex[gy*CELL:(gy+1)*CELL, gx*CELL:(gx+1)*CELL] = np.array(im)
         self.image = tex
-        q = (tex.astype(np.int32) * 15 + 127) // 255
+        q = ((tex.astype(np.int32) * 3 + 127) // 255) * 5   # 일본판 글리프와 같은 4단계(0/5/10/15) — 흐린 안티앨리어싱 픽셀 제거
         blk = q.reshape(tex.shape[0]//8, 8, TEXW//8, 8).transpose(0, 2, 1, 3).reshape(-1)
         data = ((blk[0::2] << 4) | blk[1::2]).astype(np.uint8).tobytes()
         self.texdata = data + b'\0' * (-len(data) % 0x1000)

@@ -21,7 +21,8 @@ def build(disk, out_files):
     repl = {}; touched = set()
     def add(nd, t, ops):
         k = tex_key(nd, t)[1:]
-        repl[k] = encode_like(nd, t, apply_ops(decode_nut_tex(nd, t), ops))
+        orig = decode_nut_tex(nd, t)
+        repl[k] = encode_like(nd, t, apply_ops(orig, ops), orig)   # 바뀐 부분만 재인코딩
         touched.update(where[k])
     for n, ops in texspec.SPEC.items():
         nd, t = load(n); add(nd, t, ops)
