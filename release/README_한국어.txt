@@ -1,21 +1,21 @@
-스타폭스 어썰트 한글패치 v0.91 (게임큐브 / 일본판 기준)
+스타폭스 어썰트 한글패치 v0.9.1 (게임큐브 / 일본판 기준)
 =========================================================
 
 ■ 준비물
   - 일본판 ISO   Star Fox - Assault (Japan).iso
       CRC32 089208F3 / MD5 27aed37f24061b1ff06cdd3640053481
       (RVZ·GCM 등으로 갖고 계시면 Dolphin으로 ISO 변환 후 사용)
-  - 패치 파일     StarFoxAssault_KO_v0.91.xdelta
+  - 패치 파일     StarFoxAssault_KO_v0.9.1.xdelta
   - 패치 도구     xdelta3 또는 Delta Patcher 같은 GUI 도구
 
 ■ 적용 방법
   1) Delta Patcher (GUI)
      - Original file: 일본판 ISO
-     - XDelta patch:  StarFoxAssault_KO_v0.91.xdelta
+     - XDelta patch:  StarFoxAssault_KO_v0.9.1.xdelta
      - Apply patch 클릭
 
   2) xdelta3 (명령줄)
-     xdelta3 -d -s "Star Fox - Assault (Japan).iso" StarFoxAssault_KO_v0.91.xdelta "Star Fox - Assault (Korean).iso"
+     xdelta3 -d -s "Star Fox - Assault (Japan).iso" StarFoxAssault_KO_v0.9.1.xdelta "Star Fox - Assault (Korean).iso"
 
 ■ 결과 파일 확인 (여기와 다르면 원본 ISO가 다른 것입니다)
   CRC32 8E03EC77
@@ -32,7 +32,7 @@
 ■ 확인 환경
   - Dolphin 에뮬레이터에서 동작 확인 (실기는 미확인)
 
-■ v0.91 변경 내용
+■ v0.9.1 변경 내용
   - 글자 주변에 지저분하게 보이던 픽셀 정리 (대사창, 메뉴 버튼, 결과 화면)
   - 대사 문장부호 검수: 화자가 바뀌는 자리에 마침표, 부르는 말 뒤 쉼표
   - 일본어 직역투 정리 (약 320줄)
