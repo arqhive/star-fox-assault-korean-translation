@@ -3,14 +3,15 @@ import json
 from gcfs import read_fst
 from nut import parse_nutc
 from texedit import tex_key
+import paths
 _f = None; _scans = {}
 def _iso():
     global _f
-    if _f is None: _f = read_fst('../Star Fox - Assault (Japan).iso')[0]
+    if _f is None: _f = read_fst(paths.jp_iso())[0]
     return _f
 def loc_of(ref):
     s, n = ref
-    if s not in _scans: _scans[s] = json.load(open('scan%s.json' % s))
+    if s not in _scans: _scans[s] = json.load(open(paths.DATA / ('scan%s.json' % s)))
     c = _scans[s][n]
     if 'locs' in c: p, a, ti = c.get('loc') or c['locs'][0]
     else: p, a, ti = c['path'], c['abs'], c['ti']

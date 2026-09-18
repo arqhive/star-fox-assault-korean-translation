@@ -5,9 +5,10 @@ from PIL import Image, ImageDraw, ImageFont
 from yay0 import decompress, compress
 from gcfont import Font, sjis_index
 from dol import Dol
+import paths
 
 import os
-BASE_FONT = os.environ.get('GC_FONT_JAPANESE', '../../Dolphin-x64/Sys/GC/font_japanese.bin')   # Dolphin Sys/GC/font_japanese.bin
+BASE_FONT = paths.gc_font()      # Dolphin Sys/GC/font_japanese.bin
 KO_FONT = ImageFont.truetype('C:/Windows/Fonts/malgunbd.ttf', 19)
 KANJI_START = 0x889F
 

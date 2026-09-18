@@ -1,14 +1,15 @@
 # text/*.json 의 ko 를 번역 원고(*_ko.py)에 반영: 항목 이름이 같은 줄의 문자열 끝 문장부호를 맞춤
 import json, glob, re, sys
+import paths
 ko = {}
-for fn in glob.glob('text/*.json'):
+for fn in glob.glob(str(paths.KO / '*.json')):
     b = json.load(open(fn, encoding='utf-8'))
     for bl in (b if isinstance(b, list) else [b]):
         for e in bl.get('entries', []):
             if e.get('ko'): ko[e['name']] = e['ko']
 LINE = re.compile(r"^(\s*'([\w]+)':\s*f?')([^']*)('\s*,?\s*)$")   # 한 줄에 항목 하나인 경우만
 n = 0
-for fn in sorted(glob.glob('text/*_ko.py')):
+for fn in sorted(glob.glob(str(paths.DRAFTS / '*_ko.py'))):
     out = []; ch = 0
     for line in open(fn, encoding='utf-8').read().split('\n'):
         m = LINE.match(line)

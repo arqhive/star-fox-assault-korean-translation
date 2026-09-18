@@ -1,14 +1,15 @@
 import json, sys, hashlib, numpy as np
 from PIL import Image, ImageDraw
 from gcfs import read_fst
+import paths
 from nut import parse_nutc
 from gxtex import decode_nut_tex
 from texedit import tex_key
 import texspec
 files = sys.argv[2:]; out = sys.argv[1]
-cands = json.load(open('texcands.json'))
+cands = json.load(open(paths.DATA / 'texcands.json'))
 done = {c['hash'] for n, c in enumerate(cands) if n in texspec.SPEC or n == 95}
-f, *_, e = read_fst('../Star Fox - Assault (Japan).iso'); loc = {p: (o, s) for p, o, s in e}
+f, *_, e = read_fst(paths.jp_iso()); loc = {p: (o, s) for p, o, s in e}
 found = {}
 for p in files:
     o, s = loc[p]; f.seek(o); d = f.read(s); i = -1

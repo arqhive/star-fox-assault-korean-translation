@@ -1,10 +1,11 @@
 import json, sys, numpy as np
 from PIL import Image, ImageDraw
 from gcfs import read_fst
+import paths
 from nut import parse_nutc
 from gxtex import decode_nut_tex
 c = json.load(open('texcands.json'))
-f, *_, e = read_fst('../Star Fox - Assault (Japan).iso')
+f, *_, e = read_fst(paths.jp_iso())
 def load(n):
     p, absoff, ti = c[n]['locs'][0]; f.seek(absoff); nd = f.read(0x200000); t = parse_nutc(nd)[ti]
     return nd, t, decode_nut_tex(nd, t)

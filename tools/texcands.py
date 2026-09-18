@@ -1,12 +1,13 @@
 import json, hashlib, numpy as np
 from PIL import Image, ImageDraw
 from gcfs import read_fst
+import paths
 from nut import parse_nutc
 from gxtex import decode_nut_tex
 diff = {(k[0], k[1], k[2], k[3]) for k, v in json.load(open('texdiff.json'))}
 miss = {tuple(k) for k in json.load(open('texmissing.json')) if not k[0].startswith('/attract/')}
 want = diff | miss
-f, *_, e = read_fst('../Star Fox - Assault (Japan).iso')
+f, *_, e = read_fst(paths.jp_iso())
 cands = {}   # hash -> info
 for p, o, s in e:
     if p not in {k[0] for k in want}: continue

@@ -1,29 +1,30 @@
-# 누적 한글 빌드: python build_all.py [출력 ISO]
+# 한글 ISO 빌드: python tools/build.py [출력 ISO]  (기본 work/StarFoxAssault_KO.iso)
 import json, sys, os, re, struct
 from kolib import *
+import paths
 
-JP_ISO = '../Star Fox - Assault (Japan).iso'
+JP_ISO = paths.jp_iso()
 TARGETS = [  # (디스크 경로, 번역 JSON, 무전 복사본 pac)
-    ('/movie/m0111.fpc', 'text/m0111.json', None),
-    ('/movie/m0121.fpc', 'text/m0121.json', None),
-    ('/fpc/s_01_01.fpc', 'text/s01.json', '/attract/comm01.pac'),
-    ('/fpc/s_02_01.fpc', 'text/s02.json', '/attract/comm02.pac'),
-    ('/fpc/s_03_01.fpc', 'text/s03.json', '/attract/comm03.pac'),
-    ('/fpc/s_04_01.fpc', 'text/s04.json', '/attract/comm04.pac'),
-    ('/movie/m0541.fpc', 'text/m0541.json', None),
-    ('/fpc/s_05_01.fpc', 'text/s05.json', '/attract/comm05.pac'),
-    ('/movie/m0641.fpc', 'text/m0641.json', None),
-    ('/fpc/s_06_01.fpc', 'text/s06.json', '/attract/comm06.pac'),
-    ('/fpc/s_07_01.fpc', 'text/s07.json', '/attract/comm07.pac'),
-    ('/fpc/s_08_01.fpc', 'text/s08.json', '/attract/comm08.pac'),
-    ('/movie/m3100.fpc', 'text/m3100.json', None),
-    ('/fpc/s_09_01.fpc', 'text/s09.json', '/attract/comm09.pac'),
-    ('/movie/m3200.fpc', 'text/m3200.json', None),
-    ('/fpc/s_10_01.fpc', 'text/s10.json', '/attract/comm10.pac'),
-    ('/movie/m1041.fpc', 'text/m1041.json', None),
-    ('/movie/m2300.fpc', 'text/m2300.json', None),
-] + [('/fpc/b0%d01.fpc' % i, 'text/b0%d.json' % i, None, False) for i in range(1, 10)] + [
-    ('/disk.pac', 'text/disk.json', None, False),
+    ('/movie/m0111.fpc', 'm0111.json', None),
+    ('/movie/m0121.fpc', 'm0121.json', None),
+    ('/fpc/s_01_01.fpc', 's01.json', '/attract/comm01.pac'),
+    ('/fpc/s_02_01.fpc', 's02.json', '/attract/comm02.pac'),
+    ('/fpc/s_03_01.fpc', 's03.json', '/attract/comm03.pac'),
+    ('/fpc/s_04_01.fpc', 's04.json', '/attract/comm04.pac'),
+    ('/movie/m0541.fpc', 'm0541.json', None),
+    ('/fpc/s_05_01.fpc', 's05.json', '/attract/comm05.pac'),
+    ('/movie/m0641.fpc', 'm0641.json', None),
+    ('/fpc/s_06_01.fpc', 's06.json', '/attract/comm06.pac'),
+    ('/fpc/s_07_01.fpc', 's07.json', '/attract/comm07.pac'),
+    ('/fpc/s_08_01.fpc', 's08.json', '/attract/comm08.pac'),
+    ('/movie/m3100.fpc', 'm3100.json', None),
+    ('/fpc/s_09_01.fpc', 's09.json', '/attract/comm09.pac'),
+    ('/movie/m3200.fpc', 'm3200.json', None),
+    ('/fpc/s_10_01.fpc', 's10.json', '/attract/comm10.pac'),
+    ('/movie/m1041.fpc', 'm1041.json', None),
+    ('/movie/m2300.fpc', 'm2300.json', None),
+] + [('/fpc/b0%d01.fpc' % i, 'b0%d.json' % i, None, False) for i in range(1, 10)] + [
+    ('/disk.pac', 'disk.json', None, False),
 ]
 LIMITS = {'radio': 408, 'demo': 504}
 
@@ -34,7 +35,7 @@ def disk(path):
 
 out_files = {}; over = []
 for path, js, comm, *opt in TARGETS:
-    blocks = json.load(open(js, encoding='utf-8'))
+    blocks = json.load(open(paths.KO / js, encoding='utf-8'))
     empty = [(b['first'], e['name']) for b in blocks for e in b['entries'] if not e['ko']]
     assert not empty, empty
     kana = [(e['name'], e['ko']) for b in blocks for e in b['entries']
@@ -63,6 +64,9 @@ out_files.update(menu_files)
 print('menu files', len(menu_files))
 import build_tex
 out_files.update(build_tex.build(disk, out_files))
-if len(sys.argv) > 1:
-    rebuild_iso(JP_ISO, sys.argv[1], out_files, new_dol=new_dol)
-    verify_iso(JP_ISO, sys.argv[1], out_files, new_dol=new_dol)
+out_iso = sys.argv[1] if len(sys.argv) > 1 else str(paths.WORK / 'StarFoxAssault_KO.iso')
+if out_iso != '-':
+    paths.WORK.mkdir(exist_ok=True)
+    rebuild_iso(JP_ISO, out_iso, out_files, new_dol=new_dol)
+    verify_iso(JP_ISO, out_iso, out_files, new_dol=new_dol)
+    print('  ->', out_iso)

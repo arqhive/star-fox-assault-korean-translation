@@ -3,9 +3,10 @@ import json
 from kofont import *
 from fpctree import *
 from kolib import selt_sites
+import paths
 
-MENU_FILES = {'/fpc/select.fpc': 'text/select.json', '/fpc/resvs.fpc': 'text/resvs.json',
-              '/fpc/ressc1.fpc': 'text/ressc1.json', '/fpc/ressc2.fpc': 'text/ressc2.json'}
+MENU_FILES = {'/fpc/select.fpc': 'select.json', '/fpc/resvs.fpc': 'resvs.json',
+              '/fpc/ressc1.fpc': 'ressc1.json', '/fpc/ressc2.fpc': 'ressc2.json'}
 REL_STRINGS = {  # (파일, 오프셋, 원문, 번역) — 번역 바이트 수는 원문 이하
  '/m2.rel': [(0x181f8, 'しない', '끔'), (0x18200, 'する', '켬'), (0x184ec, 'ポイント', '포인트'), (0x184f8, 'タイム', '타임'),
              (0x18500, 'サバイバル', '서바이벌'), (0x1850c, 'なし', '없음'), (0x18514, 'あり', '있음'),
@@ -40,10 +41,10 @@ def sjis_bytes(text, komap):
     return out
 
 def build(disk, dol_bytes):
-    menus = {p: json.load(open(js, encoding='utf-8')) for p, js in MENU_FILES.items()}
+    menus = {p: json.load(open(paths.KO / js, encoding='utf-8')) for p, js in MENU_FILES.items()}
     texts = [NAME_TABLE1, NAME_TABLE2] + [e['ko'] for b in menus.values() for e in b[0]['entries']] + [k for v in REL_STRINGS.values() for _, _, k in v] + [k for _, _, k in DOL_STRINGS]
     komap = KoMap(texts)
-    raw, comp = build_font(komap, 'ko_font.szp')
+    raw, comp = build_font(komap, paths.WORK / 'ko_font.szp')
     db = bytearray(dol_bytes)
     for off, jp, ko in DOL_STRINGS:
         src = jp.encode('shift_jis'); assert db[off:off+len(src)] == src and db[off+len(src)] == 0, (hex(off), jp)

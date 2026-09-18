@@ -1,5 +1,6 @@
 import json, hashlib
 from gcfs import read_fst
+import paths
 from nut import parse_nutc
 def scan(iso):
     f,*_,e = read_fst(iso); res = {}
@@ -17,7 +18,7 @@ def scan(iso):
                 res.setdefault((p, gid, t['w'], t['h']), []).append((hashlib.md5(blob).hexdigest(), t['fmt'], k, t['i'], i))
             k += 1
     return res
-jp = scan('../Star Fox - Assault (Japan).iso'); us = scan('../Star Fox - Assault (USA).iso')
+jp = scan(paths.jp_iso()); us = scan(paths.us_iso())
 diff = []; missing = []
 for key, vs in jp.items():
     if key not in us:

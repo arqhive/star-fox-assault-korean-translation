@@ -1,8 +1,9 @@
 # 대사 문장부호 검수: 평서문 끝에 마침표 추가 (규칙 + 예외 목록)
-import json, glob, re, sys
+import json, glob, re, sys, os
+import paths
 
-FILES = sorted(glob.glob('text/s0*.json')) + sorted(glob.glob('text/s10.json')) + \
-        sorted(glob.glob('text/m*.json')) + sorted(glob.glob('text/b0*.json'))
+FILES = sorted(glob.glob(str(paths.KO / 's0*.json'))) + sorted(glob.glob(str(paths.KO / 's10.json'))) + \
+        sorted(glob.glob(str(paths.KO / 'm*.json'))) + sorted(glob.glob(str(paths.KO / 'b0*.json')))
 END_OK = set('다군네어야지게라아줘나고까냐먼봐마해자데돼와면텨소요죠걸군가록워')   # 평서형 종결 어미 끝 글자
 SKIP_LAST = {'서', '만', '핑', '중', '흥', '윽', '음', '기', '피', '코', '스', '니', '리', '이', '히', '히힛'}
 EXC = {'0762_0430003', '0301_0120004', '0641_0070001', '0761_0580004', '1062_0210002'}   # 이어지는 말·감탄사로 끝나 마침표가 어색한 줄
@@ -34,7 +35,7 @@ def walk(apply=False, exc=()):
                 if new != ko:
                     n += 1; ch += 1
                     if apply: e['ko'] = new
-                    else: print('%s | %s | %s | %s' % (fn[5:-5], e['name'], ko.replace('\n', '/'), (e.get('en') or '').replace('\n', '/')))
+                    else: print('%s | %s | %s | %s' % (os.path.basename(fn)[:-5], e['name'], ko.replace('\n', '/'), (e.get('en') or '').replace('\n', '/')))
         if apply and ch: json.dump(b, open(fn, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('총 %d줄' % n, file=sys.stderr)
 

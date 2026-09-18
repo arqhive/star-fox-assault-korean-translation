@@ -2,17 +2,18 @@
 import json, sys, numpy as np
 from PIL import Image, ImageDraw
 from gcfs import read_fst
+import paths
 from nut import parse_nutc
 from gxtex import decode_nut_tex
 import texspec
-cands = json.load(open('texcands.json'))
+cands = json.load(open(paths.DATA / 'texcands.json'))
 done = {c['hash'] for n, c in enumerate(cands) if n in texspec.SPEC or n == 95}
 seen = set()
 for sj in ('scanA.json', 'scanB.json'):
-    for c in json.load(open(sj)):
+    for c in json.load(open(paths.DATA / sj)):
         if c['fmt'] in (4, 5): seen.add((c['abs'], c['ti']))
-allt = json.load(open('alltex.json'))
-f, *_, e = read_fst('../Star Fox - Assault (Japan).iso')
+allt = json.load(open(paths.DATA / 'alltex.json'))
+f, *_, e = read_fst(paths.jp_iso())
 sel = []
 for c in allt:
     w, h, fm = c['w'], c['h'], c['fmt']
