@@ -78,6 +78,7 @@ python tools/make_patch.py 0.9.1
 - 메뉴: [`translation/drafts/menu_ko.py`](translation/drafts/menu_ko.py) 수정 → `python tools/menu_apply.py` → 빌드
 - 그림 글씨: [`tools/texspec.py`](tools/texspec.py), [`tools/texspec2.py`](tools/texspec2.py) 수정 → 빌드
 - 표기·말투·문장부호 원칙은 [`translation/GLOSSARY.md`](translation/GLOSSARY.md), 검수 기준은 [`docs/REVIEW_GUIDE.md`](docs/REVIEW_GUIDE.md) 참고
+- 직역투 후보 찾기: `python tools/jpcheck.py`
 - 검사: `python tools/check_ko.py` (빈 줄·한자/가나 혼입·줄 폭·줄 수), 여러 파일에 복사된 대사 맞추기: `python tools/sync_dup.py --apply`
 - 빌드는 `translation/ko/*.json` 의 `ko` 값을 씁니다. 줄 폭 초과(무전 408px / 데모 504px)나 한자·가나 혼입이 있으면 멈춥니다.
 
