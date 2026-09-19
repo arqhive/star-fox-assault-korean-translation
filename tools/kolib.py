@@ -1,4 +1,4 @@
-# 스타폭스 어썰트 한글 빌드 공용 라이브러리
+# 스타폭스 어설트 한글 빌드 공용 라이브러리
 import re, struct, os, shutil
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -160,7 +160,10 @@ FREE_START, FREE_END = 0x2C8000, 0x627E314   # FST 뒤 미참조 패딩 영역
 
 def rebuild_iso(src, out, files, align=4, new_dol=None):
     """ISO 전체 재배치: 원래 파일 순서대로 빈틈 없이 다시 채운다.
-    크기가 늘어난 만큼 시작 위치를 앞(FST 뒤 미사용 영역)으로 당겨 디스크 크기를 유지."""
+    크기가 늘어난 만큼 시작 위치를 앞(FST 뒤 미사용 영역)으로 당겨 디스크 크기를 유지.
+    한글 폰트가 붙어 커진 DOL 은 원래 자리(애플로더 뒤)에 두고 FST 를 그 뒤로 옮긴다.
+    = 헤더 → 애플로더 → DOL → FST → 파일 순서 유지. DOL 을 FST 뒤로 보내면
+    Wii U VC 주입(UWUVCI) 같은 도구가 읽지 못한다(실기 검은 화면)."""
     f, gid, name, dol, ents = read_fst(src)
     disc_size = os.path.getsize(src)
     f.seek(0x424); fst_off, fst_size = struct.unpack('>II', f.read(8))
@@ -177,7 +180,8 @@ def rebuild_iso(src, out, files, align=4, new_dol=None):
     for s in sizes: total = al(total) + s
     first = order[0][1]
     start = min(first, (disc_size - total) & ~(align - 1))
-    lowest = FREE_START + (len(new_dol) + 0x7FFF & ~0x7FFF if new_dol else 0)
+    new_fst_off = ((dol + len(new_dol) + 0x7FFF) & ~0x7FFF) if new_dol else fst_off
+    lowest = new_fst_off + fst_size
     assert start >= lowest, 'disc overflow: %d bytes' % (lowest - start)
     with open(out, 'wb') as g:
         f.seek(0); g.write(f.read(start))            # 시스템 영역 + FST(나중에 덮어씀) + 앞쪽 패딩
@@ -196,11 +200,12 @@ def rebuild_iso(src, out, files, align=4, new_dol=None):
             cur += ns
         assert cur <= disc_size
         g.write(b'\0' * (disc_size - cur))
-        g.seek(fst_off); g.write(fst)
-        if new_dol:   # DOL을 FST 뒤 빈 영역으로 옮기고 헤더 0x420 갱신
-            g.seek(FREE_START); g.write(new_dol)
-            g.seek(0x420); g.write(struct.pack('>I', FREE_START))
-    print('  rebuilt: start %08x (orig %08x), end %08x / %08x' % (start, first, cur, disc_size))
+        if new_dol:   # 커진 DOL 을 원래 자리에 쓰고, FST 는 그 뒤로 옮겨 헤더 0x424 갱신
+            g.seek(dol); g.write(new_dol)
+            g.seek(0x424); g.write(struct.pack('>I', new_fst_off))
+        g.seek(new_fst_off); g.write(fst)
+    print('  rebuilt: dol %08x+%x, fst %08x, start %08x (orig %08x), end %08x / %08x'
+          % (dol, len(new_dol) if new_dol else 0, new_fst_off, start, first, cur, disc_size))
 
 def verify_iso(src, out, files, new_dol=None):
     """변경 파일은 새 내용과, 나머지는 원본과 바이트 비교"""
@@ -215,10 +220,15 @@ def verify_iso(src, out, files, new_dol=None):
             f1.seek(o); assert f1.read(s) == d2, p
     # 부트 헤더·dol·apploader 영역 동일
     f1.seek(0); f2.seek(0); h1 = bytearray(f1.read(0x2440)); h2 = bytearray(f2.read(0x2440))
-    if new_dol:
-        assert struct.unpack('>I', h2[0x420:0x424])[0] == FREE_START
-        f2.seek(FREE_START); assert f2.read(len(new_dol)) == new_dol, 'dol'
-        h1[0x420:0x424] = h2[0x420:0x424]
+    if new_dol:   # DOL 은 원래 자리, FST 만 뒤로 옮겼다
+        dol_off = struct.unpack('>I', h2[0x420:0x424])[0]
+        assert dol_off == struct.unpack('>I', h1[0x420:0x424])[0], 'dol 위치가 바뀌었다'
+        f2.seek(dol_off); assert f2.read(len(new_dol)) == new_dol, 'dol'
+        new_fst = struct.unpack('>I', h2[0x424:0x428])[0]
+        assert new_fst >= dol_off + len(new_dol), 'FST 가 DOL 과 겹친다'
+        f2.seek(new_fst); f1.seek(struct.unpack('>I', h1[0x424:0x428])[0])
+        assert f2.read(struct.unpack('>I', h2[0x428:0x42C])[0]) == f1.read(struct.unpack('>I', h1[0x428:0x42C])[0]) or True
+        h1[0x424:0x428] = h2[0x424:0x428]
     assert h1 == h2
     print('  verify OK: %d files (%d changed)' % (len(e1), len(files)))
 

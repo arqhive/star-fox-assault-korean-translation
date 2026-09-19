@@ -59,6 +59,48 @@ def move_rel_strings(d, sec_no, items, komap):
             p += 8
     assert n == 2 * len(items), ('재배치 항목 수가 예상과 다름', n)
 
+# DOL 안 부팅 시스템 메시지: 한 글자가 32비트 C000xxxx(xxxx=SJIS, ASCII 는 <<8), 끝은 00000000.
+# 본체 ROM 폰트로 그리므로 한글을 한자 칸에 넣은 우리 폰트에서는 일부 글자가 한글로 깨져 보인다.
+# (오프셋은 DOL 파일 기준. 번역은 원문 글자 수 이하)
+DOL_WIDE = [
+    (0x230210, 'ディスクカバーが開いています。ゲームを', '디스크 커버가 열려 있습니다. '),
+    (0x230264, '続ける', '게임을'),
+    (0x230274, '場合はディスクカバーを', ' 계속하려면 커버를'),
+    (0x2302a4, '閉めてください。', ' 닫아 주세요.'),
+    (0x23042c, 'スターフォックス アサルトのディスクを', '스타폭스 어설트 디스크를 '),
+    (0x23047c, 'セットしてください。', '넣어 주세요.'),
+    (0x230560, 'ディスクを読めませんでした。くわしくは', '디스크를 읽지 못했습니다. '),
+    (0x2305b0, '本体の', '본체의'),
+    (0x2305ec, '取扱説明書をお読みください。', ' 설명서를 읽어 주세요.'),
+    (0x230798, 'プログレッシブモードで表示しますか？', '프로그레시브 모드로 표시할까요?'),
+    (0x2308b4, 'はい', '예'),
+    (0x2308d0, 'いいえ', '아니요'),
+    (0x2308ec, '画面表示モードはプログレッシブモードに', '화면 모드가 프로그레시브 모드로 '),
+    (0x23093c, 'セットされました。　Ａボタンを押して下さい。', '설정되었습니다. A 버튼을 누르세요.'),
+    (0x230a90, '画面表示モードはインターレースモードに', '화면 모드가 인터레이스 모드로 '),
+    (0x230ae0, 'セットされました。', '설정되었습니다.'),
+]
+
+def wide_char(ch, komap):
+    if ch in komap.map: return 0xC0000000 | komap.map[ch]
+    b = ch.encode('shift_jis')
+    return 0xC0000000 | ((b[0] << 8 | b[1]) if len(b) == 2 else (b[0] << 8))
+
+def patch_dol_wide(db, komap):
+    """C000 형식 문자열 교체: 원문 확인 → 한글로 다시 쓰고 00000000 으로 끝낸다"""
+    for off, jp, ko in DOL_WIDE:
+        n = 0
+        while struct.unpack('>I', db[off + n*4:off + n*4 + 4])[0] >> 16 == 0xC000: n += 1
+        got = ''
+        for k in range(n):
+            c = struct.unpack('>I', db[off + k*4:off + k*4 + 4])[0] & 0xFFFF
+            hi, lo = c >> 8, c & 0xFF
+            got += chr(hi) if lo == 0 and hi < 0x80 else bytes([hi, lo]).decode('shift_jis')
+        assert got == jp, (hex(off), got, jp)
+        assert len(ko) <= n, (hex(off), len(ko), n, ko)
+        out = b''.join(struct.pack('>I', wide_char(c, komap)) for c in ko) + bytes(4)
+        db[off:off + len(out)] = out
+
 DOL_STRINGS = [(0x21D8A0, '新規登録', '신규등록'), (0x21DA54, 'ゲスト', '게스트'),
                (0x29CDCC, 'はい', '예'), (0x29CDDC, 'いいえ', '아니요')]   # DOL 파일 오프셋
 
@@ -71,7 +113,9 @@ def sjis_bytes(text, komap):
 
 def build(disk, dol_bytes):
     menus = {p: json.load(open(paths.KO / js, encoding='utf-8')) for p, js in MENU_FILES.items()}
-    texts = [NAME_TABLE1, NAME_TABLE2] + [e['ko'] for b in menus.values() for e in b[0]['entries']] + [k for v in REL_STRINGS.values() for _, _, k in v] + [k for _, _, k in DOL_STRINGS]
+    texts = ([NAME_TABLE1, NAME_TABLE2] + [e['ko'] for b in menus.values() for e in b[0]['entries']]
+             + [k for v in REL_STRINGS.values() for _, _, k in v] + [k for _, _, k in DOL_STRINGS]
+             + [k for _, _, k in DOL_WIDE] + [k for _, items in REL_MOVED.values() for _, _, k in items])
     komap = KoMap(texts)
     raw, comp = build_font(komap, paths.WORK / 'ko_font.szp')
     db = bytearray(dol_bytes)
@@ -79,6 +123,7 @@ def build(disk, dol_bytes):
         src = jp.encode('shift_jis'); assert db[off:off+len(src)] == src and db[off+len(src)] == 0, (hex(off), jp)
         kb = sjis_bytes(ko, komap); assert len(kb) <= len(src)
         db[off:off+len(src)] = kb.ljust(len(src), b'\0')
+    patch_dol_wide(db, komap)          # 부팅 시스템 메시지(C000 형식)
     new_dol, arena = patch_dol(bytes(db), comp)
     print('  font: %d hangul, yay0 %d bytes, arena lo -> %08x' % (len(komap), len(comp), arena))
     files = {}
