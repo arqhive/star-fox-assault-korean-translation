@@ -11,10 +11,11 @@ REL_STRINGS = {  # (파일, 오프셋, 원문, 번역) — 번역 바이트 수�
  '/m2.rel': [(0x181f8, 'しない', '끔'), (0x18200, 'する', '켬'), (0x184ec, 'ポイント', '포인트'), (0x184f8, 'タイム', '타임'),
              (0x18500, 'サバイバル', '서바이벌'), (0x1850c, 'なし', '없음'), (0x18514, 'あり', '있음'),
              (0x185e8, 'アーウィン', '아윙'), (0x18600, 'ランドマスター', '랜드마스터'), (0x1861c, 'パイロット', '파일럿'),
-             (0x18654, 'ユーザーセッティング', '유저 세팅'), (0x187f8, 'レベルセレクト', '레벨 셀렉트'),
+             (0x18654, 'ユーザーセッティング', '유저 세팅'), (0x187f8, 'レベルセレクト', '레벨 선택'),
              (0x18a2c, 'オプション', '옵션'), (0x18a44, 'ユーザーセッティング', '유저 세팅'), (0x18a6c, 'プレイデータ', '플레이데이터'),
              (0x18a88, 'サウンド', '사운드'), (0x18c60, '倒した回数', '격파 횟수'), (0x18c80, '倒された回数', '쓰러진 횟수'),
-             (0x18cf0, 'バトルスコア', '배틀 스코어')],
+             (0x18cf0, 'バトルスコア', '배틀 스코어'),
+             (0x186b4, '小', '소'), (0x186bc, '大', '대')],   # 배틀 핸디캡 설정값
  '/m3.rel': [(0x9bac, 'リザルト', '결과'), (0x9bf0, '倒した数', '격파 수'), (0x9c14, '倒された数', '쓰러진 수'),
              (0x9d14, 'リザルト', '결과')],
 }
@@ -30,6 +31,33 @@ NAME_TABLE2 = ('파퍼포푸피하허호후히에애'
                '민준영진현성은윤석철김')
 NAME_TABLES = [(0x18040, 'あかさた', NAME_TABLE1), (0x180B8, 'アカサタ', NAME_TABLE2)]
 assert len(NAME_TABLE1) == len(set(NAME_TABLE1)) == 59 and len(NAME_TABLE2) == len(set(NAME_TABLE2)) == 59 and not set(NAME_TABLE1) & set(NAME_TABLE2)
+
+# 배틀 핸디캡 설정값: 원래 자리(小/大)는 4바이트뿐이라 '작게/크게'가 안 들어간다.
+# '유저 세팅'으로 짧아진 0x18654 문자열 뒤 빈칸에 새 문자열을 넣고,
+# 그 자리를 가리키던 재배치(relocation) addend 를 새 위치로 돌린다.
+REL_MOVED = {'/m2.rel': (4, [(0x1865e, 0x704, '작게'), (0x18663, 0x70c, '크게')])}   # (데이터 섹션 번호, [새 오프셋, 원래 addend, 번역])
+
+def move_rel_strings(d, sec_no, items, komap):
+    """문자열을 빈칸으로 옮기고 그것을 가리키는 재배치 항목의 addend 를 고친다"""
+    nsec, secoff = struct.unpack('>II', d[0x0c:0x14])
+    impoff, impsz = struct.unpack('>II', d[0x28:0x30])
+    base = struct.unpack('>I', d[secoff + sec_no * 8:secoff + sec_no * 8 + 4])[0] & ~3
+    remap = {}
+    for newoff, oldadd, ko in items:
+        kb = sjis_bytes(ko, komap) + bytes(1)
+        assert not any(d[newoff:newoff + len(kb)]), ('빈칸이 아님', hex(newoff))
+        d[newoff:newoff + len(kb)] = kb
+        remap[oldadd] = newoff - base
+    n = 0
+    for k in range(impsz // 8):
+        p = struct.unpack('>I', d[impoff + k * 8 + 4:impoff + k * 8 + 8])[0]
+        while True:
+            off, typ, rs, add = struct.unpack('>HBBI', d[p:p + 8])
+            if typ == 203: break
+            if typ not in (201, 202) and rs == sec_no and add in remap:
+                struct.pack_into('>I', d, p + 4, remap[add]); n += 1
+            p += 8
+    assert n == 2 * len(items), ('재배치 항목 수가 예상과 다름', n)
 
 DOL_STRINGS = [(0x21D8A0, '新規登録', '신규등록'), (0x21DA54, 'ゲスト', '게스트'),
                (0x29CDCC, 'はい', '예'), (0x29CDDC, 'いいえ', '아니요')]   # DOL 파일 오프셋
@@ -74,6 +102,10 @@ def build(disk, dol_bytes):
             d[off:off+len(src)] = kb.ljust(len(src), b'\0')
         files[p] = bytes(d)
     d = bytearray(files['/m2.rel'])
+    for pth, (sec_no, items) in REL_MOVED.items():
+        dd = bytearray(files[pth]) if pth != '/m2.rel' else d
+        move_rel_strings(dd, sec_no, items, komap)
+        if pth != '/m2.rel': files[pth] = bytes(dd)
     for off, head, table in NAME_TABLES:
         assert d[off:off + 8] == head.encode('shift_jis'), hex(off)
         n = 0
