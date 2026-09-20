@@ -1,4 +1,4 @@
-# 텍스처 한글화: texspec 사양 적용 + 타이틀 로고(RGBA8)는 북미판 데이터로 교체
+# 텍스처 한글화 + 일본판 로고의 일본어 부제만 교체 (북미판 불필요)
 import json, hashlib
 from gcfs import read_fst
 from nut import parse_nutc
@@ -28,21 +28,11 @@ def build(disk, out_files):
         nd, t = load(n); add(nd, t, ops)
     for ref, ops in texspec2.SPEC2.items():
         nd, t = texpick.load(ref); add(nd, t, ops)
-    # 로고: 북미판에서 같은 GIDX·크기 텍스처
-    nd, t = load(LOGO_N); gid, w, h, _ = tex_key(nd, t)
-    fu, *_, eu = read_fst(paths.us_iso())
-    lp = cands[LOGO_N]['locs'][0][0]
-    uo, us = {p: (o, s) for p, o, s in eu}[lp]; fu.seek(uo); ud = fu.read(us)
-    found = None; i = -1
-    while found is None:
-        i = ud.find(b'NUTC', i + 1); assert i >= 0, 'US logo not found'
-        try: ts = parse_nutc(ud[i:])
-        except Exception: continue
-        for ut in ts:
-            k = tex_key(ud[i:], ut)
-            if k[:3] == (gid, w, h) and ut['tot'] <= t['tot']:
-                found = ('entry', ud[i + ut['off']:i + ut['off'] + ut['tot']])
-    repl[tex_key(nd, t)[1:]] = found; touched |= where[tex_key(nd, t)[1:]]
+    from build_logo import localize_logo
+    nd, t = load(LOGO_N)
+    original = decode_nut_tex(nd, t)
+    repl[tex_key(nd, t)[1:]] = encode_like(nd, t, localize_logo(original), original)
+    touched |= where[tex_key(nd, t)[1:]]
     files = {}; total = 0
     for p in sorted(touched):
         src = out_files.get(p) or disk(p)

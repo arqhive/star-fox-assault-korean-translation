@@ -36,7 +36,7 @@ def text_layer(size_wh, box, text, color, px, align='center', spacing=0, outline
                     for oy in range(-ow * SS, ow * SS + 1, SS // 2 or 1):
                         dr.text((x - l + ox, y + oy), ch, font=font, fill=tuple(oc))
             dr.text((x - l, y), ch, font=font, fill=tuple(color))
-        x += w + (sp if ch != ' ' else 0)
+        x += w + sp
     return np.array(big.resize((W, H), Image.LANCZOS))
 
 def over(dst, layer):
@@ -58,6 +58,12 @@ def erase(img, box, mode, color=None, thresh=60):
         img[y0:y1, x0:x1] = 0
     elif mode == 'fill':
         img[y0:y1, x0:x1] = color
+    elif mode == 'rowcopy':
+        # Sample a known clean margin, never the text or neighboring controls.
+        sx0, sx1 = color
+        for y in range(y0, y1):
+            cols, counts = np.unique(img[y, sx0:sx1], axis=0, return_counts=True)
+            img[y, x0:x1] = cols[counts.argmax()]
     elif mode == 'inpaint':   # 밝은(글자) 픽셀을 주변으로 메움
         reg = img[y0:y1, x0:x1]
         lum = reg[..., :3].astype(int).mean(-1)
@@ -217,6 +223,14 @@ def encode_like(nd, t, img, orig=None):
     """orig(원본 이미지)를 주면 바뀐 부분만 다시 인코딩한다"""
     f = t['fmt']; w, h = t['w'], t['h']
     old = nd[t['data_off']:t['data_off'] + t['dsz']]
+    if f == 3:
+        nbx, nby = (w + 3) // 4, (h + 3) // 4
+        full = np.zeros((nby * 4, nbx * 4, 4), np.uint8)
+        full[:h, :w] = img
+        tiles = full.reshape(nby, 4, nbx, 4, 4).transpose(0, 2, 1, 3, 4).reshape(-1, 16, 4)
+        data = np.concatenate([tiles[..., [3, 0]].reshape(-1, 32),
+                               tiles[..., [1, 2]].reshape(-1, 32)], axis=1).tobytes()
+        return data + old[len(data):]  # Preserve any trailing mip levels/padding.
     if f == 4:
         data = enc_cmpr(img)
         return _keep_unchanged_cmpr(old, data, img, orig, w, h) if orig is not None else data

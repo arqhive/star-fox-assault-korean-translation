@@ -1,0 +1,8 @@
+Built-in imagegen, 2026-09-20. Localized from the Japanese title logo.
+User direction: keep the Japanese edition's English logo; localize only its Japanese subtitle.
+
+Final asset prompt:
+Use case: background-extraction. Extract ONLY the small Korean subtitle from the supplied logo as a standalone transparent PNG asset. Exact text: "스타폭스 어설트". Seven white bold Hangul syllables each on its own royal blue round backplate, in one horizontal row, with a slightly larger word gap after 스타폭스. Remove ALL English logo, swoosh, trademark symbols and other artwork. Preserve the Korean lettering and blue round-disc style. All seven circles must be fully visible and have equal diameter. Real alpha transparency, no black rectangular background or checkerboard. Center the single subtitle row with generous empty transparent padding on every side; no cropping of circles. No other text.
+
+tools/build_logo.py fits this generated subtitle to the game's original texture.
+The original English artwork is read from the user's Japanese ISO at build time.

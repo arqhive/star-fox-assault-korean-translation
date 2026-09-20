@@ -5,15 +5,17 @@
 
 **제작: arqhive**
 
+**최신 버전: [v1.1](../../releases/tag/v1.1)** — 그래픽 배경·테두리·정렬 수정 및 일본판 타이틀 부제 한글화. [변경 내역](docs/CHANGELOG.md)
+
 - 대사 전체 한글화 (미션 1~10 무전·데모 대사, 무비 자막, 미션 브리핑)
 - 메뉴 전체 한글화 (싱글·배틀·옵션·결과·메모리카드 메시지)
 - 본체 IPL ROM 의 SJIS 폰트를 한글 폰트로 교체하고 DOL 을 패치
-- 그림 글씨 96종 한글화 (미션 부제, 행성 이름, 버튼 라벨, 무전 화자 이름표, 타이틀 로고)
+- 그림 글씨 96종 한글화 (미션 부제, 행성 이름, 버튼 라벨, 무전 화자 이름표) 및 타이틀 로고 부제 한글화
 - 이름 입력 화면을 한글 음절표로 교체 (메모리카드에 저장한 이름도 유지)
 - **원본과 같은 1.4GB 디스크 크기 유지**
 - 확인 환경: Dolphin 에서 스토리·대전·보너스 게임·메뉴 전부 검수, **실기(Wii U vWii + Nintendont) 및 Wii U VC 주입(UWUVCI) 동작 확인**
 
-> 이 저장소에는 **게임 데이터(ISO, 추출한 원문 대사, 그래픽)가 들어 있지 않습니다.**
+> 이 저장소에는 **게임 원본 데이터(ISO, 추출한 원문 대사·그래픽)가 들어 있지 않습니다.**
 > 패치를 만들거나 적용하려면 본인이 소유한 게임에서 직접 덤프한 원본이 필요합니다.
 
 ## 사용자용: 패치 적용
@@ -28,13 +30,15 @@
 | CRC32 | `089208F3` |
 | MD5 | `27aed37f24061b1ff06cdd3640053481` |
 
-| 패치 적용 결과 (v1.0.1) | 값 |
+| 패치 적용 결과 (v1.1) | 값 |
 |---|---|
 | 크기 | 1,459,978,240 바이트 (원본과 같음) |
-| CRC32 | `035F0117` |
-| MD5 | `bf4fa3bba31ecb552abf8d1dfd26e5b7` |
-| SHA1 | `d59d348ca5e0e8e3dcd35f149342beafd1e2ecab` |
+| CRC32 | `AADAC46F` |
+| MD5 | `68556a9dcec0fe9aaad9d8b669038891` |
+| SHA1 | `fd15e4515f8ef2232cc2735c5189c8a16e4985d0` |
+| SHA256 | `2a5f13dd7beb30eaea81a6f2862ecfa0886397e1a213bf4ceac2502c31b32269` |
 
+- v1.1 패치는 **일본판 원본 ISO에 적용**합니다. 기존 한글판에 덧씌우는 패치가 아닙니다.
 - 북미·유럽판에는 적용할 수 없습니다. RVZ·GCM 으로 갖고 계시면 Dolphin 으로 ISO 로 바꾼 뒤 적용하세요.
 - 패치 도구: [Delta Patcher](https://github.com/marco-calautti/DeltaPatcher)(GUI) 또는 [xdelta3](https://github.com/jmacd/xdelta-gpl/releases)(명령줄).
 
@@ -53,9 +57,8 @@
 
 | 항목 | 비고 |
 |---|---|
-| Python 3.11 이상 | `pip install -r requirements.txt` (numpy, Pillow, opencv-python) |
+| Python 3.11 이상 | `pip install -r requirements.txt` (numpy, Pillow, opencv-python, capstone) |
 | 일본판 ISO | 저장소 루트나 `iso/` 에 두거나 환경 변수 `SFA_JP_ISO` 로 지정 |
-| 북미판 ISO | 타이틀 로고를 가져오는 데만 필요 — `SFA_US_ISO` |
 | `font_japanese.bin` | Dolphin 의 `Sys/GC/` 에 있는 파일. 경로가 다르면 `GC_FONT_JAPANESE` |
 | 맑은 고딕 Bold | `C:/Windows/Fonts/malgunbd.ttf` — 한글 글리프를 그리는 데 사용 |
 | xdelta3 | 배포용 패치를 만들 때만 필요 — PATH 또는 `XDELTA3` |
@@ -67,7 +70,7 @@
 python tools/build.py
 
 # 배포용 패치까지: 빌드 → xdelta 패치 → 적용해서 해시 검증
-python tools/make_patch.py 1.0.1
+python tools/make_patch.py 1.1
 ```
 
 일본판 ISO 를 읽어 변경 파일 58개와 패치된 DOL 로 이미지를 다시 구성하고, 파일 1090개를 전부 원본과 비교해 검증합니다.
@@ -78,6 +81,7 @@ python tools/make_patch.py 1.0.1
 - 대사: [`translation/drafts/*_ko.py`](translation/drafts) 수정 → `python tools/tm_apply.py translation/ko/sNN.json translation/drafts/sNN_ko.py` → 빌드
 - 메뉴: [`translation/drafts/menu_ko.py`](translation/drafts/menu_ko.py) 수정 → `python tools/menu_apply.py` → 빌드
 - 그림 글씨: [`tools/texspec.py`](tools/texspec.py), [`tools/texspec2.py`](tools/texspec2.py) 수정 → 빌드
+- 타이틀: 일본판 영문 로고를 유지하고 일본어 부제만 한글화. [`tools/build_logo.py`](tools/build_logo.py)와 `tools/assets/title_subtitle_ko.png` 사용. 북미판 ISO 불필요.
 - 표기·말투·문장부호 원칙은 [`translation/GLOSSARY.md`](translation/GLOSSARY.md), 검수 기준은 [`docs/REVIEW_GUIDE.md`](docs/REVIEW_GUIDE.md) 참고
 - 직역투 후보 찾기: `python tools/jpcheck.py`
 - 검사: `python tools/check_ko.py` (빈 줄·한자/가나 혼입·줄 폭·줄 수), 여러 파일에 복사된 대사 맞추기: `python tools/sync_dup.py --apply`

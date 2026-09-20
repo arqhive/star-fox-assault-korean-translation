@@ -1,26 +1,29 @@
-스타폭스 어설트 한글패치 v1.0.1 (게임큐브 / 일본판 기준)
+스타폭스 어설트 한글패치 v1.1 (게임큐브 / 일본판 기준)
 ========================================================
 
 ■ 준비물
   - 일본판 ISO   Star Fox - Assault (Japan).iso
       CRC32 089208F3 / MD5 27aed37f24061b1ff06cdd3640053481
       (RVZ·GCM 등으로 갖고 계시면 Dolphin으로 ISO 변환 후 사용)
-  - 패치 파일     StarFoxAssault_KO_v1.0.1.xdelta
+  - 패치 파일     StarFoxAssault_KO_v1.1.xdelta
   - 패치 도구     xdelta3 또는 Delta Patcher 같은 GUI 도구
 
 ■ 적용 방법
   1) Delta Patcher (GUI)
      - Original file: 일본판 ISO
-     - XDelta patch:  StarFoxAssault_KO_v1.0.1.xdelta
+     - XDelta patch:  StarFoxAssault_KO_v1.1.xdelta
      - Apply patch 클릭
 
   2) xdelta3 (명령줄)
-     xdelta3 -d -s "Star Fox - Assault (Japan).iso" StarFoxAssault_KO_v1.0.1.xdelta "Star Fox - Assault (Korean).iso"
+     xdelta3 -d -s "Star Fox - Assault (Japan).iso" StarFoxAssault_KO_v1.1.xdelta "Star Fox - Assault (Korean).iso"
+
+  ※ v1.1도 일본판 원본에 적용합니다. 기존 한글판 ISO에 덧씌우지 마세요.
 
 ■ 결과 파일 확인 (여기와 다르면 원본 ISO가 다른 것입니다)
-  CRC32 035F0117
-  MD5   bf4fa3bba31ecb552abf8d1dfd26e5b7
-  SHA1  d59d348ca5e0e8e3dcd35f149342beafd1e2ecab
+  CRC32 AADAC46F
+  MD5   68556a9dcec0fe9aaad9d8b669038891
+  SHA1  fd15e4515f8ef2232cc2735c5189c8a16e4985d0
+  SHA256 2a5f13dd7beb30eaea81a6f2862ecfa0886397e1a213bf4ceac2502c31b32269
   크기  1,459,978,240 바이트
 
 ■ 한글화 범위
@@ -30,9 +33,21 @@
   - 이름 입력 화면을 한글 음절표로 교체
 
 ■ 확인 환경
+  - v1.1 그래픽 수정본의 게임 내 표시 확인 완료
+  - 아래는 기존 릴리즈에서 확인한 호환 환경입니다.
   - Dolphin 에뮬레이터에서 스토리·대전·보너스 게임·메뉴 전부 검수
   - 실기: Wii U vWii + Nintendont 에서 부팅·동작 확인
   - Wii U VC 주입(UWUVCI)으로도 동작 확인
+
+■ v1.1 변경 내용
+  - 사격·이동·시점 안내의 색 배경 복원 (검은 띠·얼룩 정리)
+  - 핸디캡 입력 상자, 상하 반전 값 상자, 이름 중복 알림 테두리 복원
+  - 전적 표시 라벨의 글자 뒤 배경 얼룩 제거
+  - 미션 부제·행성명의 공백 자간 및 가운데 정렬 수정
+  - 상하 반전 설정 화면의 '진동' 글자를 1px 아래로 조정
+  - 일본판 STAR FOX ASSAULT 영문 로고를 유지하고 일본어 부제만 한글화
+  - 빌드 시 북미판 ISO 의존성 제거, 누락된 capstone 의존성 추가
+  - 대사·폰트·실행 코드는 v1.0.1과 동일
 
 ■ v1.0.1 변경 내용
   - 대사·메뉴 번역 검수 반영 (261줄)

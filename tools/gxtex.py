@@ -67,6 +67,7 @@ def decode_nut_tex(nd, t, fmt4='cmpr', fmt10='ia4'):
     data = nd[t['data_off']:t['data_off'] + t['dsz']]
     w, h, f = t['w'], t['h'], t['fmt']
     palfmt = int(t['b'][4:6], 16)
+    if f == 3: return decode_rgba8(data, w, h)
     if f == 4: return decode_cmpr(data, w, h) if fmt4 == 'cmpr' else decode_i4(data, w, h)
     if f in (5, 6):
         n = 16 if f == 5 else 256
@@ -78,5 +79,7 @@ def decode_nut_tex(nd, t, fmt4='cmpr', fmt10='ia4'):
 
 def decode_rgba8(data, w, h):
     nbx = (w + 3) // 4; nby = (h + 3) // 4
-    a = np.frombuffer(data[:nbx * nby * 64], np.uint8).reshape(-1, 4)   # GX RGBA8: A R G B? 확인 필요
+    # GX RGBA8: each 4x4 tile has 32 bytes of AR, then 32 bytes of GB.
+    b = np.frombuffer(data[:nbx * nby * 64], np.uint8).reshape(-1, 64)
+    a = np.stack([b[:, 1:32:2], b[:, 32:64:2], b[:, 33:64:2], b[:, 0:32:2]], -1)
     return blocks(a, w, h, 4, 4)
