@@ -28,12 +28,12 @@
 | CRC32 | `089208F3` |
 | MD5 | `27aed37f24061b1ff06cdd3640053481` |
 
-| 패치 적용 결과 (v1.0) | 값 |
+| 패치 적용 결과 (v1.0.1) | 값 |
 |---|---|
 | 크기 | 1,459,978,240 바이트 (원본과 같음) |
-| CRC32 | `65222010` |
-| MD5 | `4beb6829fa113ed3922c970fc3e27685` |
-| SHA1 | `32838e0697ae25e3913b6164ee2d5586cb169f17` |
+| CRC32 | `035F0117` |
+| MD5 | `bf4fa3bba31ecb552abf8d1dfd26e5b7` |
+| SHA1 | `d59d348ca5e0e8e3dcd35f149342beafd1e2ecab` |
 
 - 북미·유럽판에는 적용할 수 없습니다. RVZ·GCM 으로 갖고 계시면 Dolphin 으로 ISO 로 바꾼 뒤 적용하세요.
 - 패치 도구: [Delta Patcher](https://github.com/marco-calautti/DeltaPatcher)(GUI) 또는 [xdelta3](https://github.com/jmacd/xdelta-gpl/releases)(명령줄).
@@ -67,7 +67,7 @@
 python tools/build.py
 
 # 배포용 패치까지: 빌드 → xdelta 패치 → 적용해서 해시 검증
-python tools/make_patch.py 1.0
+python tools/make_patch.py 1.0.1
 ```
 
 일본판 ISO 를 읽어 변경 파일 58개와 패치된 DOL 로 이미지를 다시 구성하고, 파일 1090개를 전부 원본과 비교해 검증합니다.

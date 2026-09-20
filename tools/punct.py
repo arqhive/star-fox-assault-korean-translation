@@ -2,8 +2,8 @@
 import json, glob, re, sys, os
 import paths
 
-FILES = sorted(glob.glob(str(paths.KO / 's0*.json'))) + sorted(glob.glob(str(paths.KO / 's10.json'))) + \
-        sorted(glob.glob(str(paths.KO / 'm*.json'))) + sorted(glob.glob(str(paths.KO / 'b0*.json')))
+FILES = sorted(paths.KO.glob('s0*.json')) + sorted(paths.KO.glob('s10.json')) + \
+        sorted(paths.KO.glob('m*.json')) + sorted(paths.KO.glob('b0*.json'))
 END_OK = set('다군네어야지게라아줘나고까냐먼봐마해자데돼와면텨소요죠걸군가록워')   # 평서형 종결 어미 끝 글자
 SKIP_LAST = {'서', '만', '핑', '중', '흥', '윽', '음', '기', '피', '코', '스', '니', '리', '이', '히', '히힛'}
 EXC = {'0762_0430003', '0301_0120004', '0641_0070001', '0761_0580004', '1062_0210002'}   # 이어지는 말·감탄사로 끝나 마침표가 어색한 줄

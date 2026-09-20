@@ -9,15 +9,15 @@ LINE = re.compile(r"^(\s*'([\w]+)':\s*(f?)')([^']*)('\s*,?\s*)$")
 
 def main(apply=False):
     ko = {}
-    for fn in glob.glob(str(paths.KO / '*.json')):
-        b = json.load(open(fn, encoding='utf-8'))
+    for fn in paths.KO.glob('*.json'):
+        b = json.load(open(str(fn), encoding='utf-8'))
         for bl in (b if isinstance(b, list) else [b]):
             for e in bl.get('entries', []):
                 if e.get('ko'): ko[e['name']] = e['ko']
     total = 0
-    for fn in sorted(glob.glob(str(paths.DRAFTS / '*_ko.py'))):
+    for fn in sorted(paths.DRAFTS.glob('*_ko.py')):
         out = []; ch = 0
-        for line in open(fn, encoding='utf-8').read().split('\n'):
+        for line in open(str(fn), encoding='utf-8').read().split('\n'):
             m = LINE.match(line)
             if m and m.group(2) in ko:
                 fstr, body = m.group(3), m.group(4)
@@ -27,13 +27,13 @@ def main(apply=False):
                     if tail and not body.endswith(('.', '!', '?', '…', '~')):
                         line = m.group(1) + body + tail + m.group(5); ch += 1
                 elif body != want:
-                    if not apply: print('%s %s\n    - %s\n    + %s' % (fn.split('\\')[-1], m.group(2), body, want))
+                    if not apply: print('%s %s\n    - %s\n    + %s' % (fn.name, m.group(2), body, want))
                     line = m.group(1) + want + m.group(5); ch += 1
             out.append(line)
         if ch:
             total += ch
-            if apply: open(fn, 'w', encoding='utf-8', newline='').write('\n'.join(out))
-            print(fn.split('\\')[-1], ch)
+            if apply: open(str(fn), 'w', encoding='utf-8', newline='').write('\n'.join(out))
+            print(fn.name, ch)
     print('총 %d줄' % total)
 
 if __name__ == '__main__':

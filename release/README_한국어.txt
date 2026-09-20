@@ -1,26 +1,26 @@
-스타폭스 어설트 한글패치 v1.0 (게임큐브 / 일본판 기준)
-======================================================
+스타폭스 어설트 한글패치 v1.0.1 (게임큐브 / 일본판 기준)
+========================================================
 
 ■ 준비물
   - 일본판 ISO   Star Fox - Assault (Japan).iso
       CRC32 089208F3 / MD5 27aed37f24061b1ff06cdd3640053481
       (RVZ·GCM 등으로 갖고 계시면 Dolphin으로 ISO 변환 후 사용)
-  - 패치 파일     StarFoxAssault_KO_v1.0.xdelta
+  - 패치 파일     StarFoxAssault_KO_v1.0.1.xdelta
   - 패치 도구     xdelta3 또는 Delta Patcher 같은 GUI 도구
 
 ■ 적용 방법
   1) Delta Patcher (GUI)
      - Original file: 일본판 ISO
-     - XDelta patch:  StarFoxAssault_KO_v1.0.xdelta
+     - XDelta patch:  StarFoxAssault_KO_v1.0.1.xdelta
      - Apply patch 클릭
 
   2) xdelta3 (명령줄)
-     xdelta3 -d -s "Star Fox - Assault (Japan).iso" StarFoxAssault_KO_v1.0.xdelta "Star Fox - Assault (Korean).iso"
+     xdelta3 -d -s "Star Fox - Assault (Japan).iso" StarFoxAssault_KO_v1.0.1.xdelta "Star Fox - Assault (Korean).iso"
 
 ■ 결과 파일 확인 (여기와 다르면 원본 ISO가 다른 것입니다)
-  CRC32 65222010
-  MD5   4beb6829fa113ed3922c970fc3e27685
-  SHA1  32838e0697ae25e3913b6164ee2d5586cb169f17
+  CRC32 035F0117
+  MD5   bf4fa3bba31ecb552abf8d1dfd26e5b7
+  SHA1  d59d348ca5e0e8e3dcd35f149342beafd1e2ecab
   크기  1,459,978,240 바이트
 
 ■ 한글화 범위
@@ -33,6 +33,13 @@
   - Dolphin 에뮬레이터에서 스토리·대전·보너스 게임·메뉴 전부 검수
   - 실기: Wii U vWii + Nintendont 에서 부팅·동작 확인
   - Wii U VC 주입(UWUVCI)으로도 동작 확인
+
+■ v1.0.1 변경 내용
+  - 대사·메뉴 번역 검수 반영 (261줄)
+  - 용어 정리: 유저 세팅 → 사용자 설정, 플레이데이터 → 플레이 데이터,
+    신규등록 → 신규 등록, 토탈 포인트 → 총점, 남은 플레이어 수 → 목숨 수
+  - 미션 부제 '숙적과 다시' → '숙적의 귀환',
+    '엠블럼 획득 라인' → '엠블럼 획득 기준'
 
 ■ v1.0 변경 내용
   - 대전(배틀) 모드와 보너스 게임까지 전 모드 검수 완료

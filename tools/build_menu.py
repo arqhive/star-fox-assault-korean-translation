@@ -11,8 +11,8 @@ REL_STRINGS = {  # (파일, 오프셋, 원문, 번역) — 번역 바이트 수�
  '/m2.rel': [(0x181f8, 'しない', '끔'), (0x18200, 'する', '켬'), (0x184ec, 'ポイント', '포인트'), (0x184f8, 'タイム', '타임'),
              (0x18500, 'サバイバル', '서바이벌'), (0x1850c, 'なし', '없음'), (0x18514, 'あり', '있음'),
              (0x185e8, 'アーウィン', '아윙'), (0x18600, 'ランドマスター', '랜드마스터'), (0x1861c, 'パイロット', '파일럿'),
-             (0x18654, 'ユーザーセッティング', '유저 세팅'), (0x187f8, 'レベルセレクト', '레벨 선택'),
-             (0x18a2c, 'オプション', '옵션'), (0x18a44, 'ユーザーセッティング', '유저 세팅'), (0x18a6c, 'プレイデータ', '플레이데이터'),
+             (0x18654, 'ユーザーセッティング', '사용자 설정'), (0x187f8, 'レベルセレクト', '레벨 선택'),
+             (0x18a2c, 'オプション', '옵션'), (0x18a44, 'ユーザーセッティング', '사용자 설정'), (0x18a6c, 'プレイデータ', '플레이 데이터'),
              (0x18a88, 'サウンド', '사운드'), (0x18c60, '倒した回数', '격파 횟수'), (0x18c80, '倒された回数', '쓰러진 횟수'),
              (0x18cf0, 'バトルスコア', '배틀 스코어'),
              (0x186b4, '小', '소'), (0x186bc, '大', '대')],   # 배틀 핸디캡 설정값
@@ -35,19 +35,32 @@ assert len(NAME_TABLE1) == len(set(NAME_TABLE1)) == 59 and len(NAME_TABLE2) == l
 # 배틀 핸디캡 설정값: 원래 자리(小/大)는 4바이트뿐이라 '작게/크게'가 안 들어간다.
 # '유저 세팅'으로 짧아진 0x18654 문자열 뒤 빈칸에 새 문자열을 넣고,
 # 그 자리를 가리키던 재배치(relocation) addend 를 새 위치로 돌린다.
-REL_MOVED = {'/m2.rel': (4, [(0x1865e, 0x704, '작게'), (0x18663, 0x70c, '크게')])}   # (데이터 섹션 번호, [새 오프셋, 원래 addend, 번역])
+REL_MOVED = {'/m2.rel': (4, [(0x704, '작게'), (0x70c, '크게')])}   # (데이터 섹션 번호, [원래 addend, 번역])
 
-def move_rel_strings(d, sec_no, items, komap):
+def room_at(buf, off, src, cap=64):
+    """원문 뒤 정렬 패딩(0 바이트)까지 포함해 쓸 수 있는 칸 수. 널 종료 자리를 포함한다"""
+    n = len(src)
+    while n < cap and off + n < len(buf) and buf[off + n] == 0: n += 1
+    return n
+
+def move_rel_strings(d, sec_no, items, komap, gaps):
     """문자열을 빈칸으로 옮기고 그것을 가리키는 재배치 항목의 addend 를 고친다"""
     nsec, secoff = struct.unpack('>II', d[0x0c:0x14])
     impoff, impsz = struct.unpack('>II', d[0x28:0x30])
     base = struct.unpack('>I', d[secoff + sec_no * 8:secoff + sec_no * 8 + 4])[0] & ~3
     remap = {}
-    for newoff, oldadd, ko in items:
+    gaps = sorted(gaps, key=lambda g: -g[1])
+    for oldadd, ko in items:
         kb = sjis_bytes(ko, komap) + bytes(1)
-        assert not any(d[newoff:newoff + len(kb)]), ('빈칸이 아님', hex(newoff))
-        d[newoff:newoff + len(kb)] = kb
-        remap[oldadd] = newoff - base
+        for i, (start, size) in enumerate(gaps):
+            if size >= len(kb) and start >= base:
+                assert not any(d[start:start + len(kb)]), ('빈칸이 아님', hex(start))
+                d[start:start + len(kb)] = kb
+                remap[oldadd] = start - base
+                gaps[i] = (start + len(kb), size - len(kb))
+                break
+        else:
+            raise AssertionError('옮길 빈칸이 부족하다: ' + ko)
     n = 0
     for k in range(impsz // 8):
         p = struct.unpack('>I', d[impoff + k * 8 + 4:impoff + k * 8 + 8])[0]
@@ -101,7 +114,7 @@ def patch_dol_wide(db, komap):
         out = b''.join(struct.pack('>I', wide_char(c, komap)) for c in ko) + bytes(4)
         db[off:off + len(out)] = out
 
-DOL_STRINGS = [(0x21D8A0, '新規登録', '신규등록'), (0x21DA54, 'ゲスト', '게스트'),
+DOL_STRINGS = [(0x21D8A0, '新規登録', '신규 등록'), (0x21DA54, 'ゲスト', '게스트'),
                (0x29CDCC, 'はい', '예'), (0x29CDDC, 'いいえ', '아니요')]   # DOL 파일 오프셋
 
 def sjis_bytes(text, komap):
@@ -115,14 +128,15 @@ def build(disk, dol_bytes):
     menus = {p: json.load(open(paths.KO / js, encoding='utf-8')) for p, js in MENU_FILES.items()}
     texts = ([NAME_TABLE1, NAME_TABLE2] + [e['ko'] for b in menus.values() for e in b[0]['entries']]
              + [k for v in REL_STRINGS.values() for _, _, k in v] + [k for _, _, k in DOL_STRINGS]
-             + [k for _, _, k in DOL_WIDE] + [k for _, items in REL_MOVED.values() for _, _, k in items])
+             + [k for _, _, k in DOL_WIDE] + [k for _, items in REL_MOVED.values() for _, k in items])
     komap = KoMap(texts)
     raw, comp = build_font(komap, paths.WORK / 'ko_font.szp')
     db = bytearray(dol_bytes)
     for off, jp, ko in DOL_STRINGS:
         src = jp.encode('shift_jis'); assert db[off:off+len(src)] == src and db[off+len(src)] == 0, (hex(off), jp)
-        kb = sjis_bytes(ko, komap); assert len(kb) <= len(src)
-        db[off:off+len(src)] = kb.ljust(len(src), b'\0')
+        room = min(room_at(db, off, src), 12)      # 같은 배열의 'New User'(9바이트)를 보면 이름 칸은 12바이트 이상
+        kb = sjis_bytes(ko, komap); assert len(kb) < room, (ko, len(kb), room)
+        db[off:off+room] = kb.ljust(room, bytes(1))
     patch_dol_wide(db, komap)          # 부팅 시스템 메시지(C000 형식)
     new_dol, arena = patch_dol(bytes(db), comp)
     print('  font: %d hangul, yay0 %d bytes, arena lo -> %08x' % (len(komap), len(comp), arena))
@@ -139,17 +153,20 @@ def build(disk, dol_bytes):
             ents.append((nm, [w0] + texts_[1:]))
         lst.items[k].body = Leaf(build_selt_raw(ents))
         files[p] = tree.ser()
+    gaps = {}
     for p, lst in REL_STRINGS.items():
-        d = bytearray(disk(p))
+        d = bytearray(disk(p)); gaps[p] = []
         for off, jp, ko in lst:
             src = jp.encode('shift_jis'); assert d[off:off+len(src)] == src and d[off+len(src)] == 0, (p, hex(off))
-            kb = sjis_bytes(ko, komap); assert len(kb) <= len(src), (ko, len(kb), len(src))
-            d[off:off+len(src)] = kb.ljust(len(src), b'\0')
+            room = room_at(d, off, src)
+            kb = sjis_bytes(ko, komap); assert len(kb) < room, (ko, len(kb), room)
+            d[off:off+room] = kb.ljust(room, bytes(1))
+            if room - len(kb) - 1 > 0: gaps[p].append((off + len(kb) + 1, room - len(kb) - 1))
         files[p] = bytes(d)
     d = bytearray(files['/m2.rel'])
     for pth, (sec_no, items) in REL_MOVED.items():
         dd = bytearray(files[pth]) if pth != '/m2.rel' else d
-        move_rel_strings(dd, sec_no, items, komap)
+        move_rel_strings(dd, sec_no, items, komap, gaps.get(pth, []))
         if pth != '/m2.rel': files[pth] = bytes(dd)
     for off, head, table in NAME_TABLES:
         assert d[off:off + 8] == head.encode('shift_jis'), hex(off)

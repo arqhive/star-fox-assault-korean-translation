@@ -28,7 +28,7 @@ PATTERNS = [
 
 def load_src():
     src = {}
-    for fn in glob.glob(str(paths.WORK / 'src' / '*.json')):
+    for fn in (paths.WORK / 'src').glob('*.json'):
         b = json.load(open(fn, encoding='utf-8'))
         for bl in (b if isinstance(b, list) else [b]):
             for e in bl['entries']: src.setdefault(e['name'], e.get('jp', ''))
