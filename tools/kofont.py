@@ -41,11 +41,35 @@ def render_glyph(ch, adv=24, cell=24, top=3, bottom=19):
     a = np.array(im).astype(np.int32)
     return np.clip((a * 3 + 127) // 255, 0, 3)
 
+BOTTOM_BAR = {8, 12, 18}     # ㅗ ㅛ ㅡ — 받침이 없으면 가로획이 글자 바닥이 된다
+
+def align_bottom_bars(glyphs):
+    """받침 없는 ㅗ·ㅛ·ㅡ 글자의 바닥 가로획 높이를 다수에 맞춘다.
+    19px 힌팅이 획을 격자에 붙이면서 「으」「드」만 1px 떠 「모으면」「카드」에서 튀어 보였다.
+    (무게중심 기준은 「그」「크」처럼 모양이 다른 글자를 잘못 어긋났다고 판단해 쓰지 않는다)"""
+    def bottom(g): return int(np.where(g.max(1) > 0)[0][-1])
+    grp = [ch for ch in glyphs if (ord(ch) - 0xAC00) % 28 == 0 and ((ord(ch) - 0xAC00) % 588) // 28 in BOTTOM_BAR]
+    if len(grp) < 5: return {}
+    rows = [bottom(glyphs[ch]) for ch in grp]
+    target = max(set(rows), key=rows.count)
+    moved = {}
+    for ch, b in zip(grp, rows):
+        d = target - b
+        if d == 0: continue
+        g = glyphs[ch]
+        edge = g[-d:] if d > 0 else g[:-d]          # 밀려서 반대쪽으로 넘어갈 줄은 비어 있어야 한다
+        assert abs(d) <= 2 and not edge.any(), (ch, d)
+        glyphs[ch] = np.roll(g, d, 0); moved[ch] = d
+    return moved
+
 def build_font(komap, out_path=None, adv=19):   # 한글 진행폭: 원본 한자(잉크 17.9·진행 20, 사이 2.1px)에 맞춰 사이 약 2.5px
     f = Font(decompress(open(BASE_FONT, 'rb').read()))
+    glyphs = {ch: render_glyph(ch, adv) for ch in komap.map}
+    moved = align_bottom_bars(glyphs)
+    if moved: print('  font: bottom bar aligned', moved)
     for ch, code in komap.map.items():
         idx = sjis_index(code)
-        f.put(idx, render_glyph(ch, adv))
+        f.put(idx, glyphs[ch])
         f.set_width(idx, adv)
     raw = bytes(f.d)
     comp = compress(raw)
