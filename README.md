@@ -80,7 +80,7 @@ Redump 정본 ISO의 값입니다. 다른 덤프도 게임 파일이 같으면 �
 - 일본판 ISO. 저장소 루트나 `iso/`에 두거나 환경 변수 `SFA_JP_ISO`로 지정합니다.
 - Dolphin의 `Sys/GC/`에 있는 `font_japanese.bin`. 경로가 다르면 환경 변수 `GC_FONT_JAPANESE`로 지정합니다.
 - 맑은 고딕 Bold(`C:/Windows/Fonts/malgunbd.ttf`). 한글 글리프를 그리는 데 씁니다.
-- 배포용 패처를 만들 때만: xdelta3 3.1.0과 wit v3.05a(cygwin64판). 패처 ZIP에 함께 넣습니다.
+- 배포용 패처를 만들 때만: xdelta3 3.1.0과 wit v3.05a(cygwin64판). 패처 ZIP에 함께 넣습니다. 릴리즈 ZIP의 `bin/`에 든 것을 그대로 써도 됩니다(`--wit` 폴더는 `bin/wit.exe`·DLL과 `gpl-2.0.txt`가 있는 구조). 새로 클론한 폴더에서 빌드·패처 생성 결과가 v1.2f 배포본과 같음을 확인했습니다.
 
 ### 빌드
 

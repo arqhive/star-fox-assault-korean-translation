@@ -4,6 +4,7 @@ from kolib import *
 import paths
 
 JP_ISO = paths.jp_iso()
+paths.WORK.mkdir(exist_ok=True)          # git 에 없는 작업 폴더 — 새로 클론하면 없다(폰트·ISO를 여기에 씀)
 TARGETS = [  # (디스크 경로, 번역 JSON, 무전 복사본 pac)
     ('/movie/m0111.fpc', 'm0111.json', None),
     ('/movie/m0121.fpc', 'm0121.json', None),
