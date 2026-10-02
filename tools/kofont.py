@@ -88,11 +88,53 @@ def align_bottom_bars(glyphs):
         glyphs[ch] = g
     return moved
 
+SHORT_H = 16     # 받침 없는 ㅗ·ㅛ·ㅡ 글자를 늘릴 키(행). 나머지 글자는 18행
+
+def stretch_short(glyphs, target_h=SHORT_H, center=10.5):
+    """받침 없는 ㅗ·ㅛ·ㅡ 글자(모·스·요 등)를 세로로 늘린다.
+    맑은 고딕은 이 글자들을 받침 있는 글자보다 낮게 디자인했고(설계 키 15 대 18), 19px 힌팅이
+    1행을 더 깎아 14행이 되어 「모든」의 「모」처럼 메뉴에서 작아 보였다.
+    확대하면 흐려지므로, 같은 줄이 이어지는 구간(세로획만 있는 줄·빈 줄)을 한 줄씩 복제해
+    늘리고 다른 글자와 같은 세로 중심(10.5)에 놓는다. 18행(다른 글자와 같은 키)은 네모 상자처럼
+    각져 보여 16행으로 둔다.
+    이미 16행인 글자(「초」「호」처럼 꼭지가 있는 ㅊ·ㅎ)도 바닥 가로획을 같은 행에 맞춰 놓는다."""
+    bottom = int(round(center - (target_h - 1) / 2)) + target_h - 1
+    moved = {}
+    for ch, g in glyphs.items():
+        k = ord(ch) - 0xAC00
+        if not (0 <= k < 11172 and k % 28 == 0 and (k % 588) // 28 in BOTTOM_BAR): continue
+        top, bot = _rows(g)
+        rows = [g[y].copy() for y in range(top, bot + 1)]
+        n = max(0, target_h - len(rows))
+        runs = []; i = 1
+        while i < len(rows):
+            if np.array_equal(rows[i], rows[i - 1]):
+                j = i
+                while j + 1 < len(rows) and np.array_equal(rows[j + 1], rows[j]): j += 1
+                runs.append((i - 1, j)); i = j + 1
+            else: i += 1
+        assert runs or n == 0, ch
+        runs.sort(key=lambda a: -(a[1] - a[0]))
+        ins = {}
+        for m in range(n):
+            end = runs[m % len(runs)][1]; ins[end] = ins.get(end, 0) + 1
+        out = []
+        for i, row in enumerate(rows):
+            out.append(row); out += [row.copy() for _ in range(ins.get(i, 0))]
+        t = bottom - len(out) + 1                  # 바닥 가로획을 무리 전체가 같은 행에
+        assert t >= 0, ch
+        new = np.zeros_like(g); new[t:t + len(out)] = out
+        if np.array_equal(new, g): continue
+        glyphs[ch] = new; moved[ch] = (len(rows), len(out))
+    return moved
+
 def build_font(komap, out_path=None, adv=19):   # 한글 진행폭: 원본 한자(잉크 17.9·진행 20, 사이 2.1px)에 맞춰 사이 약 2.5px
     f = Font(decompress(open(BASE_FONT, 'rb').read()))
     glyphs = {ch: render_glyph(ch, adv) for ch in komap.map}
     moved = align_bottom_bars(glyphs)
     if moved: print('  font: bottom bar aligned', moved)
+    tall = stretch_short(glyphs)
+    if tall: print('  font: short glyphs stretched to %d rows: %s' % (SHORT_H, ''.join(tall)))
     for ch, code in komap.map.items():
         idx = sjis_index(code)
         f.put(idx, glyphs[ch])
