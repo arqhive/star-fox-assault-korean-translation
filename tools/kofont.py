@@ -30,20 +30,22 @@ class KoMap:
         self.map = {ch: next(codes) for ch in chars}
     def __len__(self): return len(self.map)
 
-def render_glyph(ch, cell=24, top=3, bottom=19):
-    """원래 한자 글리프의 세로 범위(3~19행)에 맞춤 (0행까지 쓰면 이웃 칸이 번져 보임)"""
+def render_glyph(ch, adv=24, cell=24, top=3, bottom=19):
+    """원래 한자 글리프의 세로 범위(3~19행)에 맞춤 (0행까지 쓰면 이웃 칸이 번져 보임)
+    가로는 24px 칸이 아니라 진행폭(adv) 안의 가운데에 둔다. 칸 가운데에 두면 진행폭보다
+    오른쪽으로 삐져나가 왼쪽 여백이 없는 문장부호(. , !)가 앞 글자에 붙는다."""
     im = Image.new('L', (cell, cell), 0); dr = ImageDraw.Draw(im)
     _, t, _, b = dr.textbbox((0, 0), '한', font=KO_FONT)     # 기준 높이 고정 (글자마다 흔들리지 않게)
     l, _, r, _ = dr.textbbox((0, 0), ch, font=KO_FONT)
-    dr.text(((cell - (r - l)) // 2 - l, round((top + bottom + 1) / 2 - (t + b) / 2)), ch, font=KO_FONT, fill=255)
+    dr.text(((adv - (r - l)) // 2 - l, round((top + bottom + 1) / 2 - (t + b) / 2)), ch, font=KO_FONT, fill=255)
     a = np.array(im).astype(np.int32)
     return np.clip((a * 3 + 127) // 255, 0, 3)
 
-def build_font(komap, out_path=None, adv=22):
+def build_font(komap, out_path=None, adv=19):   # 한글 진행폭: 원본 한자(잉크 17.9·진행 20, 사이 2.1px)에 맞춰 사이 약 2.5px
     f = Font(decompress(open(BASE_FONT, 'rb').read()))
     for ch, code in komap.map.items():
         idx = sjis_index(code)
-        f.put(idx, render_glyph(ch))
+        f.put(idx, render_glyph(ch, adv))
         f.set_width(idx, adv)
     raw = bytes(f.d)
     comp = compress(raw)
