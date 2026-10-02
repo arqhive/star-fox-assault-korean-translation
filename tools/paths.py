@@ -24,7 +24,10 @@ def us_iso(): return str(_find('SFA_US_ISO', 'Star Fox - Assault (USA).iso'))
 def gc_font():
     p = os.environ.get('GC_FONT_JAPANESE')
     if p: return p
-    for d in (ROOT.parent / 'Dolphin-x64', ROOT.parent.parent / 'Dolphin-x64'):
+    import pathlib
+    home = pathlib.Path.home()
+    for d in (ROOT.parent / 'Dolphin-x64', ROOT.parent.parent / 'Dolphin-x64',
+              home / 'Desktop' / 'Dolphin-x64', home / 'OneDrive' / 'Desktop' / 'Dolphin-x64'):
         f = d / 'Sys' / 'GC' / 'font_japanese.bin'
         if f.exists(): return str(f)
     return str(ROOT.parent / 'Dolphin-x64' / 'Sys' / 'GC' / 'font_japanese.bin')

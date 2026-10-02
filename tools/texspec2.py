@@ -42,19 +42,27 @@ RADIO_NAMES = ['폭스', '팔코', '크리스탈', '슬리피', '페피', '나�
                None, '오이코니', '트리키', '사령관', '통신병', '코네리아 병사', '내비게이터', '안내 방송', '불량배',
                '오이코니 병사', '마더', '경비 로봇']
 def radio_names(img):
-    """게임이 줄을 축소해 그리므로 16px 줄을 꽉 채우고, 남는 가로 폭까지 넓혀 그린다.
+    """게임이 줄을 축소해 그리므로 16px 줄을 꽉 채운다.
+    글자 크기는 모든 이름이 같아야 해서, 가장 긴 이름(코네리아 병사·오이코니 병사)이
+    칸에 들어가는 가로 배율을 구해 23개 전부에 똑같이 적용한다.
     받침 ㄹ 처럼 가로획이 겹치는 글자가 뭉개지지 않도록 검은 획을 굵게(감마) 하고,
     테두리는 십자 모양으로만 넓혀 획 사이 틈을 남긴다(일본판도 검은 획 비율이 약 50%)."""
     from PIL import Image as _I, ImageDraw as _D, ImageFont as _F
     img = img.copy(); S = 8
     font = _F.truetype('C:/Windows/Fonts/malgunbd.ttf', 16 * S)
+    MAXW, h = 92, 14
+    def render(s):
+        big = _I.new('L', (1200, 32 * S), 0); d = _D.Draw(big)
+        d.text((4 * S, 4 * S), s, font=font, fill=255)
+        l, t, rr, b = big.getbbox(); return big.crop((l, t, rr, b))
+    nat = {s: render(s) for s in RADIO_NAMES if s}
+    # 가장 긴 이름이 칸에 겨우 들어가는 배율 (최대 1.5배까지만 늘린다)
+    k = min(1.5, MAXW / max(b.width * h / b.height for b in nat.values()))
     for r, s in enumerate(RADIO_NAMES):
         if s is None: continue
         y = r * 16
-        big = _I.new('L', (1200, 32 * S), 0); d = _D.Draw(big)
-        d.text((4 * S, 4 * S), s, font=font, fill=255)
-        l, t, rr, b = big.getbbox(); big = big.crop((l, t, rr, b))
-        h = 14; w = min(92, round(big.width * h / big.height * 1.5))
+        big = nat[s]
+        w = max(1, min(MAXW, round(big.width * h / big.height * k)))
         core = np.array(big.resize((w, h), _I.LANCZOS))
         a = np.zeros((16, 96), np.float32); a[1:15, 2:2 + w] = (core / 255) ** 0.6
         import cv2
