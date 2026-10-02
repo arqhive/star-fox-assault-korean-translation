@@ -26,7 +26,7 @@ TARGETS = [  # (디스크 경로, 번역 JSON, 무전 복사본 pac)
 ] + [('/fpc/b0%d01.fpc' % i, 'b0%d.json' % i, None, False) for i in range(1, 10)] + [
     ('/disk.pac', 'disk.json', None, False),
 ]
-LIMITS = {'radio': 408, 'demo': 504}
+import limits as _lim                   # 창별 한 줄 폭 한계 (tools/limits.py)
 
 f, gid, name, dol, ents = read_fst(JP_ISO)
 loc = {p: (o, s) for p, o, s in ents}
@@ -41,7 +41,10 @@ for path, js, comm, *opt in TARGETS:
     kana = [(e['name'], e['ko']) for b in blocks for e in b['entries']
             if re.search(r'[぀-ヿ一-鿿]', TOKEN.sub('', e['ko']))]
     assert not kana, kana
-    data, res = localize_file(disk(path), blocks, over, LIMITS, center=opt[0] if opt else None)
+    ko_name = js[:-5]                   # 창 한계는 번역 파일 이름 + 대사 이름으로 정한다
+    data, res = localize_file(disk(path), blocks, over,
+                              lambda nm, n, _j=ko_name: _lim.limit_of(_j, nm, n),
+                              center=opt[0] if opt else None)
     out_files[path] = data
     print(path, 'blocks', len(blocks), 'max glyphs', max(len(a.glyphs) for _, _, a in res.values()))
     if comm:

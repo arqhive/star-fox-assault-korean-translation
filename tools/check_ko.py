@@ -5,7 +5,7 @@ import json, re, sys
 import paths
 from kolib import split_units, ink, is_hangul, SPACE_ADV, HANGUL_ADV, CELL
 
-LIMIT_RADIO, LIMIT_DEMO = 408, 504      # 무전 창 / 데모·무비 자막 최대 폭(px)
+from limits import limit_of          # 창별 한 줄 폭 한계(근거: tools/jpwidth.py)
 MAX_LINES = 3
 KANA = re.compile(r'[぀-ヿ一-鿿]')
 TOKEN = re.compile(r'\{([0-9a-fA-F]{4}):(\d+)\}')
@@ -23,22 +23,20 @@ def line_widths(text):
         elif u[0] == 'ch': out[-1] += adv(u[1])
     return out
 
-MENU = {'select', 'resvs', 'ressc1', 'ressc2'}      # 메뉴는 본체 ROM 폰트라 폭·줄 수 제한이 다름
-
 def check(name):
     path = paths.KO / (name + '.json')
     blocks = json.load(open(path, encoding='utf-8'))
     if isinstance(blocks, dict): blocks = [blocks]
     bad = []
     for bl in blocks:
-        limit = LIMIT_RADIO if len(bl['entries']) > 100 else LIMIT_DEMO
         for e in bl['entries']:
             ko = e.get('ko') or ''
             if not ko.strip():
                 bad.append((e['name'], '빈 줄')); continue
             if KANA.search(TOKEN.sub('', ko).replace('・', '')):   # ・(가운뎃점)은 원문 그대로 씀
                 bad.append((e['name'], '한자·가나 혼입: %s' % ko.replace('\n', '/')))
-            if name in MENU: continue
+            limit = limit_of(name, e['name'], len(bl['entries']))
+            if limit is None: continue              # 메뉴(ROM 폰트)는 폭 검사 대상이 아니다
             w = line_widths(ko)
             if max(w) > limit:
                 bad.append((e['name'], '폭 초과 %dpx > %d: %s' % (max(w), limit, ko.replace('\n', '/'))))

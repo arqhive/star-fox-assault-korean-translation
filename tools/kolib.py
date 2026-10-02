@@ -108,7 +108,7 @@ def selt_sites(tree):
     rec(tree)
     return out
 
-def localize_file(jp_bytes, blocks, report=None, limits=None, center=None):
+def localize_file(jp_bytes, blocks, report=None, limit_of=None, center=None):
     # center: None=화자 헤더 없으면 가운데 정렬(무비), False=정렬 안 함
     """blocks: extract_text JSON 블록 목록(문서 순서). 반환: 새 파일 바이트, 블록별 (tex, selt) Npac"""
     tree = parse_file(jp_bytes)
@@ -144,7 +144,7 @@ def localize_file(jp_bytes, blocks, report=None, limits=None, center=None):
                 if w and (w[0] >> 16) == 0xA000:
                     header = [w[0]] + ([0xFFFFFFFF] if len(w) > 1 and w[1] == 0xFFFFFFFF else [])
                 words, widths = encode(e['ko'], atlas, header, center=(not header) if center is None else center)
-                lim = (limits or {}).get('radio' if len(blocks[bi]['entries']) > 100 else 'demo')
+                lim = limit_of(nm, len(blocks[bi]['entries'])) if limit_of else None
                 if report is not None and lim and max(widths) > lim:
                     report.append((blocks[bi]['first'], nm, max(widths), e['ko']))
                 ew.append((nm, words, texts[1]))
