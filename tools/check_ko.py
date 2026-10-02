@@ -1,4 +1,4 @@
-# 번역 검사: 빈 줄·한자/가나 혼입·줄 폭 초과·줄 수
+# 번역 검사: 빈 줄·한자/가나 혼입·줄 폭 초과·줄 수·줄 끝 문장부호
 #   python tools/check_ko.py               (전체)
 #   python tools/check_ko.py s01 b03       (일부 — translation/ko 의 파일 이름)
 import json, re, sys
@@ -6,6 +6,7 @@ import paths
 from kolib import split_units, ink, is_hangul, SPACE_ADV, HANGUL_ADV, CELL
 
 from limits import limit_of          # 창별 한 줄 폭 한계(근거: tools/jpwidth.py)
+import punct                           # 줄 끝 문장부호(대사 끝·줄 중간)
 MAX_LINES = 3
 KANA = re.compile(r'[぀-ヿ一-鿿]')
 TOKEN = re.compile(r'\{([0-9a-fA-F]{4}):(\d+)\}')
@@ -35,6 +36,7 @@ def check(name):
                 bad.append((e['name'], '빈 줄')); continue
             if KANA.search(TOKEN.sub('', ko).replace('・', '')):   # ・(가운뎃점)은 원문 그대로 씀
                 bad.append((e['name'], '한자·가나 혼입: %s' % ko.replace('\n', '/')))
+            for msg in punct.line_issues(name, e['name'], ko): bad.append((e['name'], msg))
             limit = limit_of(name, e['name'], len(bl['entries']))
             if limit is None: continue              # 메뉴(ROM 폰트)는 폭 검사 대상이 아니다
             w = line_widths(ko)
