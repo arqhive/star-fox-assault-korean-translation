@@ -42,24 +42,50 @@ def render_glyph(ch, adv=24, cell=24, top=3, bottom=19):
     return np.clip((a * 3 + 127) // 255, 0, 3)
 
 BOTTOM_BAR = {8, 12, 18}     # ㅗ ㅛ ㅡ — 받침이 없으면 가로획이 글자 바닥이 된다
+JUNG_EU = 18
+
+def _rows(g):
+    r = np.where(g.max(1) > 0)[0]
+    return int(r[0]), int(r[-1])
+
+def _shift_rows(g, lo, hi, d):
+    """g 의 lo..hi 행 덩어리를 d 행 옮긴다(옮겨 갈 자리는 비어 있어야 한다)"""
+    if d == 0: return g
+    out = g.copy(); part = g[lo:hi + 1].copy(); out[lo:hi + 1] = 0
+    assert not out[lo + d:hi + 1 + d].any() and 0 <= lo + d and hi + d < g.shape[0], (lo, hi, d)
+    out[lo + d:hi + 1 + d] = part
+    return out
 
 def align_bottom_bars(glyphs):
-    """받침 없는 ㅗ·ㅛ·ㅡ 글자의 바닥 가로획 높이를 다수에 맞춘다.
-    19px 힌팅이 획을 격자에 붙이면서 「으」「드」만 1px 떠 「모으면」「카드」에서 튀어 보였다.
+    """받침 없는 ㅗ·ㅛ·ㅡ 글자의 바닥 가로획과 위쪽 자음 높이를 같은 구조의 글자들에 맞춘다.
+    19px 힌팅이 획을 격자에 붙이면서 「으」「드」의 가로획이 1px 떠 「모으면」「모드」에서 튀어 보였다.
+    - 가로획: 무리의 다수 바닥 행에 맞춘다.
+    - 위쪽 자음(ㅡ 글자처럼 가로획과 떨어져 있을 때만): 같은 초성을 쓰는 무리 글자들의 윗 행에 맞춘다.
+      「드」는 「ㄷ」이 이미 「도」와 같은 높이라 가로획만 내리고, 「으」는 「ㅇ」도 「오」「요」보다
+      높아 함께 내린다. 글자 전체를 한꺼번에 내리면 「드」처럼 키가 1줄 줄어 작아 보인다.
     (무게중심 기준은 「그」「크」처럼 모양이 다른 글자를 잘못 어긋났다고 판단해 쓰지 않는다)"""
-    def bottom(g): return int(np.where(g.max(1) > 0)[0][-1])
-    grp = [ch for ch in glyphs if (ord(ch) - 0xAC00) % 28 == 0 and ((ord(ch) - 0xAC00) % 588) // 28 in BOTTOM_BAR]
+    def jamo(ch):
+        c = ord(ch) - 0xAC00; return c // 588, (c % 588) // 28, c % 28
+    grp = [ch for ch in glyphs if jamo(ch)[2] == 0 and jamo(ch)[1] in BOTTOM_BAR]
     if len(grp) < 5: return {}
-    rows = [bottom(glyphs[ch]) for ch in grp]
-    target = max(set(rows), key=rows.count)
+    bottoms = [_rows(glyphs[ch])[1] for ch in grp]
+    target = max(set(bottoms), key=bottoms.count)
     moved = {}
-    for ch, b in zip(grp, rows):
-        d = target - b
-        if d == 0: continue
-        g = glyphs[ch]
-        edge = g[-d:] if d > 0 else g[:-d]          # 밀려서 반대쪽으로 넘어갈 줄은 비어 있어야 한다
-        assert abs(d) <= 2 and not edge.any(), (ch, d)
-        glyphs[ch] = np.roll(g, d, 0); moved[ch] = d
+    for ch in grp:
+        g = glyphs[ch]; top, bot = _rows(g)
+        if bot == target: continue
+        empty = [y for y in range(top, bot) if not g[y].any()]
+        if jamo(ch)[1] == JUNG_EU and empty:
+            gap = max(empty)                       # 가로획 바로 위의 빈 줄
+            g = _shift_rows(g, gap + 1, bot, target - bot)
+            peers = [_rows(glyphs[c])[0] for c in grp if c != ch and jamo(c)[0] == jamo(ch)[0]]
+            dt = (max(set(peers), key=peers.count) - top) if peers else 0
+            up_lo, up_hi = _rows(g[:gap + 1])
+            g = _shift_rows(g, up_lo, up_hi, dt)
+            moved[ch] = (dt, target - bot)
+        else:
+            g = _shift_rows(g, top, bot, target - bot); moved[ch] = target - bot
+        glyphs[ch] = g
     return moved
 
 def build_font(komap, out_path=None, adv=19):   # 한글 진행폭: 원본 한자(잉크 17.9·진행 20, 사이 2.1px)에 맞춰 사이 약 2.5px
