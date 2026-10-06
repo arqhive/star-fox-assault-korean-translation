@@ -110,6 +110,8 @@ python tools/make_patcher.py --orig "Star Fox - Assault (Japan).iso" --build wor
 `translation/ko/*.json`에는 **번역문만** 들어 있습니다(항목 이름과 한국어).
 일본어·영어 원문은 게임 데이터라 넣지 않았습니다. 원문이 필요한 도구(`tm_apply.py`, `menu_apply.py`, `todo.py`)를 쓰려면 직접 가진 ISO에서 다시 추출하세요.
 
+일본판·북미판 ISO가 저장소 루트에 있으면 `python tools/extract_full.py` 한 번으로 모든 대사의 원문·영문·번역·화자를 `work/text_full/`에 나란히 뽑습니다(검수용).
+
 ```bash
 python tools/dump.py "<일본판 ISO>" /fpc/s_01_01.fpc work/jp_s0101.fpc
 python tools/dump.py "<북미판 ISO>" /fpc/s_01_01.fpc work/us_s0101.fpc
