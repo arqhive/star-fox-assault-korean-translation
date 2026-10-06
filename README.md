@@ -3,7 +3,7 @@
 *Star Fox: Assault* (게임큐브, 일본판 `GF7J01`) 비공식 한국어 팬 패치입니다.
 대사는 일본어판 원문을 기준으로 번역했습니다.
 
-**제작: arqhive** · **최신 버전: [v1.2f](../../releases/tag/v1.2f) (최종판)**
+**제작: arqhive** · **최신 버전: [v1.2.1f](../../releases/tag/v1.2.1f) (최종판)**
 
 - 대사 전체를 한글화했습니다(미션 1에서 10까지의 무전·데모 대사, 무비 자막, 미션 브리핑).
 - 메뉴 전체를 한글화했습니다(싱글·배틀·옵션·결과·메모리카드 메시지).
@@ -33,7 +33,7 @@
 
 ### 적용 방법
 
-1. [배포 페이지](../../releases/tag/v1.2f)에서 `GF7J_KPatch_v1.2f.zip`을 받아 풉니다.
+1. [배포 페이지](../../releases/tag/v1.2.1f)에서 `GF7J_KPatch_v1.2.1f.zip`을 받아 풉니다.
 2. 풀린 폴더에 원본 이미지를 넣고 `패치하기.bat`을 더블클릭합니다. 원본 파일을 `패치하기.bat` 위에 끌어다 놓아도 됩니다.
 3. 원본과 같은 폴더에 `Star Fox Assault (Korean).iso`가 생깁니다. 원본 파일은 그대로 남습니다.
 
@@ -87,9 +87,9 @@ Redump 정본 ISO의 값입니다. 다른 덤프도 게임 파일이 같으면 �
 # 한글 ISO 만들기 (work/StarFoxAssault_KO.iso)
 python tools/build.py
 
-# 배포용 파일 단위 패처 (release/StarFoxAssault-KO-v<버전>/ 과 .zip)
+# 배포용 파일 단위 패처 (release/GF7J_KPatch_v<버전>/ 과 .zip — 첨부 이름 규칙 [게임 코드]_KPatch_[버전])
 python tools/make_patcher.py --orig "Star Fox - Assault (Japan).iso" --build work/StarFoxAssault_KO.iso \
-    --out release/StarFoxAssault-KO-v1.2f --version 1.2f \
+    --out release/GF7J_KPatch_v1.2.1f --version 1.2.1f \
     --wit <wit 폴더> --xdelta <xdelta3.exe> --readme patcher/README.txt
 ```
 

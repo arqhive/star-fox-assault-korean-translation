@@ -9,7 +9,7 @@ ISO가 나온다. 생성기는 패처가 계산할 배치가 빌드 ISO와 같�
 
 사용:
   python tools/make_patcher.py --orig "Star Fox - Assault (Japan).iso" --build work/StarFoxAssault_KO.iso \\
-      --out release/StarFoxAssault-KO-v1.2f --version 1.2f --wit <wit-cygwin64 폴더> --xdelta work/xdelta3.exe \\
+      --out release/GF7J_KPatch_v1.2.1f --version 1.2.1f --wit <wit-cygwin64 폴더> --xdelta work/xdelta3.exe \\
       --readme release/README_한국어.txt
 """
 import argparse
