@@ -67,7 +67,9 @@ def final_pass(apply=False):
 
 
 # ---- 줄 끝 부호 검사 (check_ko.py 가 파일마다 부른다) ----
-# 정책(2026-10-03): 한글로 끝나는 대사 끝에는 감탄사·비명·호칭이라도 항상 부호를 찍는다.
+# 정책(2026-10-03, 10-06 고침): 한글로 끝나는 대사 끝에는 감탄사·호칭·명사형 보고라도 부호를 찍는다.
+# 단 비명·웃음만으로 된 대사(「꺄아아악」「으윽」)와 웃음으로 끝나는 대사(「…큰일 난데이~ 부히히」)에는
+# 찍지 않는다(스타폭스 제로 v1.2f 기준을 시리즈에 맞춤). 거꾸로 거기에 마침표가 있으면 걸린다.
 # 줄바꿈 앞에서 끝나는 문장도 다음 줄이 새 문장이면 부호를 찍는다(일본어 원문은 줄바꿈이
 # 문장 경계라 줄 끝 부호가 없고, 번역이 그 구조를 따라가면 빠진다). 예외는 아래 셋뿐이다.
 #   · 다음 대사로 문장이 이어지는 항목(CONT)            「…아파로이드에게」→「함대가 괴멸당했지…」
@@ -85,6 +87,14 @@ JOIN_WORD = ('장군', '보다', '마다', '바다', '하고', '이고', '되고
              '되게', '는데', '은데', '인데', '한데', '던데', '하지', '되지', '않지', '하니', '되니', '으니',
              '이니', '어서', '해서', '라도', '이라', '다가', '도록', '지만', '라나')
 VOC_LINE = re.compile(r'(폭스|팔코|페피|슬리피|크리스탈|다들|폭스, 다들|팔코, 슬리피)[!?.~…]*')
+# 비명·웃음: 한 줄 전체가 의성 음절뿐이거나, 줄 끝이 웃음소리
+SCREAM_LINE = re.compile(r'[…~ ]*[으아악어우와꺄캬크큭끄끼히이익윽흐흑헉하허호후부핫힛읏엑켁깨갱]+[~!?… ]*')
+LAUGH_END = re.compile(r'(하하|히히|후후|부히히|부히힛|와하하|헤헤|크크)[하히후힛헤크]*[~!?…]*$')
+
+def is_scream(last):
+    t = last.strip().rstrip('.')
+    return bool(t) and (SCREAM_LINE.fullmatch(t) is not None or LAUGH_END.search(t) is not None)
+
 _MID_OK = None
 
 def _mid_ok():
@@ -112,7 +122,9 @@ def line_issues(js, name, ko):
     if js in SKIP_FILES or name in LABELS or name.startswith('title'): return []
     out = []
     s = ko.rstrip(); last = s.split('\n')[-1]
-    if s and '가' <= s[-1] <= '힣' and '{' not in last and name not in CONT:
+    if is_scream(last):
+        if s.endswith('.'): out.append('비명·웃음 뒤 마침표: %s' % s.replace('\n', '/'))
+    elif s and '가' <= s[-1] <= '힣' and '{' not in last and name not in CONT:
         out.append('대사 끝 부호 없음: %s' % s.replace('\n', '/'))
     ok = _mid_ok()
     for i, t in mid_candidates(js, name, ko):
